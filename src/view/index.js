@@ -1,17 +1,21 @@
-
 class View {
-
-  getViewQuad () {
-    return getViewQuad(this.viewProjMatrix.data,  (this.fogDistance + this.fogBlurDistance), this.viewDirOnMap);
+  getViewQuad() {
+    return getViewQuad(
+      this.viewProjMatrix.data,
+      this.fogDistance + this.fogBlurDistance,
+      this.viewDirOnMap
+    );
   }
 
-  start () {
+  start() {
     this.shadowsEnabled = true;
 
     // disable effects if they rely on WebGL extensions
     // that the current hardware does not support
     if (!GL.depthTextureExtension) {
-      console.warn('Shadows are disabled because your GPU does not support WEBGL_depth_texture');
+      console.warn(
+        "Shadows are disabled because your GPU does not support WEBGL_depth_texture"
+      );
       this.shadowsEnabled = false;
     }
 
@@ -27,8 +31,9 @@ class View {
     // if (this.shadowsEnabled) {
     //   this.Markers = new View.Markers();
     // } else {
-      this.Markers = new View.MarkersSimple();
+    this.Markers = new View.MarkersSimple();
     // }
+    this.Overlaymap = new View.Overlaymap();
     this.Basemap = new View.Basemap();
 
     this.Overlay = new View.Overlay();
@@ -45,12 +50,16 @@ class View {
     this.renderFrame();
   }
 
-  renderFrame () {
+  renderFrame() {
     if (APP.zoom >= APP.minZoom && APP.zoom <= APP.maxZoom) {
-      requestAnimationFrame(() => {
-
+      this.RequestAnimationFrame = requestAnimationFrame(() => {
         this.setupViewport();
-        GL.clearColor(this.fogColor[0], this.fogColor[1], this.fogColor[2], 0.0);
+        GL.clearColor(
+          this.fogColor[0],
+          this.fogColor[1],
+          this.fogColor[2],
+          1.0
+        );
         GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
         const viewSize = [APP.width, APP.height];
@@ -61,12 +70,18 @@ class View {
 
           GL.enable(GL.BLEND);
 
-          GL.blendFuncSeparate(GL.ONE_MINUS_DST_ALPHA, GL.DST_ALPHA, GL.ONE, GL.ONE);
+          GL.blendFuncSeparate(
+            GL.ONE_MINUS_DST_ALPHA,
+            GL.DST_ALPHA,
+            GL.ONE,
+            GL.ONE
+          );
           GL.disable(GL.DEPTH_TEST);
           this.Horizon.render();
           GL.disable(GL.BLEND);
           GL.enable(GL.DEPTH_TEST);
 
+          this.Overlaymap.render();
           this.Basemap.render();
         } else {
           const viewTrapezoid = this.getViewQuad();
@@ -74,12 +89,29 @@ class View {
           View.Sun.updateView(viewTrapezoid);
           this.Horizon.updateGeometry(viewTrapezoid);
 
-          this.cameraGBuffer.render(this.viewMatrix, this.projMatrix, viewSize, true);
-          this.sunGBuffer.render(View.Sun.viewMatrix, View.Sun.projMatrix, [SHADOW_DEPTH_MAP_SIZE, SHADOW_DEPTH_MAP_SIZE]);
-          this.ambientMap.render(this.cameraGBuffer.framebuffer.depthTexture, this.cameraGBuffer.framebuffer.renderTexture, viewSize, 2.0);
-          this.blurredAmbientMap.render(this.ambientMap.framebuffer.renderTexture, viewSize);
+          this.cameraGBuffer.render(
+            this.viewMatrix,
+            this.projMatrix,
+            viewSize,
+            true
+          );
+          this.sunGBuffer.render(View.Sun.viewMatrix, View.Sun.projMatrix, [
+            SHADOW_DEPTH_MAP_SIZE,
+            SHADOW_DEPTH_MAP_SIZE,
+          ]);
+          this.ambientMap.render(
+            this.cameraGBuffer.framebuffer.depthTexture,
+            this.cameraGBuffer.framebuffer.renderTexture,
+            viewSize,
+            2.0
+          );
+          this.blurredAmbientMap.render(
+            this.ambientMap.framebuffer.renderTexture,
+            viewSize
+          );
           this.Buildings.render(this.sunGBuffer.framebuffer);
           this.Markers.render(this.sunGBuffer.framebuffer);
+          this.Overlaymap.render();
           this.Basemap.render();
 
           GL.enable(GL.BLEND);
@@ -91,7 +123,10 @@ class View {
           GL.blendFuncSeparate(GL.ZERO, GL.SRC_COLOR, GL.ZERO, GL.ONE);
 
           this.MapShadows.render(this.sunGBuffer.framebuffer, 0.5);
-          this.Overlay.render(this.blurredAmbientMap.framebuffer.renderTexture, viewSize);
+          this.Overlay.render(
+            this.blurredAmbientMap.framebuffer.renderTexture,
+            viewSize
+          );
 
           // linear interpolation between the colors of the current framebuffer
           // ( =building geometries) and of the sky. The interpolation factor
@@ -100,8 +135,12 @@ class View {
           // to ensure that the alpha channel will become 1.0 for each pixel after this
           // operation, and thus the whole canvas is not rendered partially transparently
           // over its background.
-          GL.blendFuncSeparate(GL.ONE_MINUS_DST_ALPHA, GL.DST_ALPHA, GL.ONE, GL.ONE);
-
+          GL.blendFuncSeparate(
+            GL.ONE_MINUS_DST_ALPHA,
+            GL.DST_ALPHA,
+            GL.ONE,
+            GL.ONE
+          );
 
           GL.disable(GL.DEPTH_TEST);
           this.Horizon.render();
@@ -120,17 +159,16 @@ class View {
           //   this.renderFrame();
           // }, 5);
         } else {
-          setTimeout(() => {
+          this.RenderTimeout = setTimeout(() => {
             this.renderFrame();
           }, 250);
         }
-
       }); // end requestAnimationFrame()
     }
   }
 
   // initialize view and projection matrix, fog distance, etc.
-  setupViewport () {
+  setupViewport() {
     if (GL.canvas.width !== APP.width) {
       GL.canvas.width = APP.width;
     }
@@ -138,8 +176,7 @@ class View {
       GL.canvas.height = APP.height;
     }
 
-    const
-      scale = 1.3567 * Math.pow(2, APP.zoom - 17),
+    const scale = 1.3567 * Math.pow(2, APP.zoom - 17),
       width = APP.width,
       height = APP.height,
       refHeight = 1024,
@@ -153,7 +190,10 @@ class View {
       .translateBy(0, 8 / scale, 0) // corrective offset to match Leaflet's coordinate system (value was determined empirically)
       .translateBy(0, 0, -1220 / scale); //move away to simulate zoom; -1220 scales APP tiles to ~256px
 
-    this.viewDirOnMap = [Math.sin(APP.rotation / 180 * Math.PI), -Math.cos(APP.rotation / 180 * Math.PI)];
+    this.viewDirOnMap = [
+      Math.sin((APP.rotation / 180) * Math.PI),
+      -Math.cos((APP.rotation / 180) * Math.PI),
+    ];
 
     // First, we need to determine the field-of-view so that our map scale does
     // not change when the viewport size changes. The map scale is given by the
@@ -175,8 +215,10 @@ class View {
     //   /refFOV/2|           |
     //  ----------------------|
     //     "virtual distance"
-    const virtualDistance = refHeight / (2 * Math.tan((refVFOV / 2) / 180 * Math.PI));
-    const verticalFOV = 2 * Math.atan((height / 2.0) / virtualDistance) / Math.PI * 180;
+    const virtualDistance =
+      refHeight / (2 * Math.tan((refVFOV / 2 / 180) * Math.PI));
+    const verticalFOV =
+      ((2 * Math.atan(height / 2.0 / virtualDistance)) / Math.PI) * 180;
 
     // OSMBuildings' perspective camera is ... special: The reference point for
     // camera movement, rotation and zoom is at the screen center (as usual).
@@ -199,13 +241,26 @@ class View {
     this.projMatrix = new GLX.Matrix()
       .translateTo(0, -height / (2 * scale), 0) // 0, APP y offset to neutralize camera y offset,
       .scale(1, -1, 1) // flip Y
-      .multiply(new GLX.Matrix.Perspective(verticalFOV, width / height, this.nearPlane, this.farPlane))
+      .multiply(
+        new GLX.Matrix.Perspective(
+          verticalFOV,
+          width / height,
+          this.nearPlane,
+          this.farPlane
+        )
+      )
       .translateBy(0, -1, 0); // camera y offset
 
-    this.viewProjMatrix = new GLX.Matrix(GLX.Matrix.multiply(this.viewMatrix, this.projMatrix));
+    this.viewProjMatrix = new GLX.Matrix(
+      GLX.Matrix.multiply(this.viewMatrix, this.projMatrix)
+    );
 
     // need to store this as a reference point to determine fog distance
-    this.lowerLeftOnMap = getIntersectionWithXYPlane(-1, -1, GLX.Matrix.invert(this.viewProjMatrix.data));
+    this.lowerLeftOnMap = getIntersectionWithXYPlane(
+      -1,
+      -1,
+      GLX.Matrix.invert(this.viewProjMatrix.data)
+    );
     if (this.lowerLeftOnMap === undefined) {
       return;
     }
@@ -221,7 +276,7 @@ class View {
     this.fogBlurDistance = 10000;
   }
 
-  speedUp () {
+  speedUp() {
     this.isFast = true;
     // console.log('FAST');
     clearTimeout(this.speedTimer);
@@ -231,12 +286,15 @@ class View {
     }, 1000);
   }
 
-  destroy () {
+  destroy() {
+    clearTimeout(this.RenderTimeout);
+    cancelAnimationFrame(this.RequestAnimationFrame);
     this.Picking.destroy();
     this.Horizon.destroy();
     this.Buildings.destroy();
     this.Markers.destroy();
     this.Basemap.destroy();
+    this.Overlaymap.destroy();
     this.MapShadows.destroy();
 
     if (this.cameraGBuffer) {

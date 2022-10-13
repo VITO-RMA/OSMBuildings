@@ -1,22 +1,21 @@
-
 /**
  * @private
  */
-function add2 (a, b) {
+function add2(a, b) {
   return [a[0] + b[0], a[1] + b[1]];
 }
 
 /**
  * @private
  */
-function mul2scalar (a, f) {
+function mul2scalar(a, f) {
   return [a[0] * f, a[1] * f];
 }
 
 /**
  * @private
  */
-function getEventXY (e) {
+function getEventXY(e) {
   const el = e.target;
   const box = el.getBoundingClientRect();
   return { x: e.x - box.left, y: e.y - box.top };
@@ -25,17 +24,18 @@ function getEventXY (e) {
 /**
  * @private
  */
-function addListener (target, type, fn) {
-  target.addEventListener(type, fn, false);
+function addListener(target, type, fn) {
+  const options = { capture: false };
+  if (["DOMMouseScroll", "mousewheel"].indexOf(type) > -1)
+    options.passive = true;
+  target.addEventListener(type, fn, options);
 }
 
-
 class Events {
-
   /**
    * @param container {HTMLElement} DOM element for local pointer events.
    */
-  constructor (container) {
+  constructor(container) {
     this.listeners = {};
     this.isDisabled = false;
 
@@ -51,58 +51,58 @@ class Events {
     this.addAllListeners(container);
   }
 
-  addAllListeners (container) {
+  addAllListeners(container) {
     const doc = window.document;
 
-    if ('ontouchstart' in window) {
-      addListener(container, 'touchstart', e => {
+    if ("ontouchstart" in window) {
+      addListener(container, "touchstart", (e) => {
         this.onTouchStart(e);
       });
 
-      addListener(doc, 'touchmove', e => {
+      addListener(doc, "touchmove", (e) => {
         this.onTouchMoveDocument(e);
       });
-      addListener(container, 'touchmove', e => {
+      addListener(container, "touchmove", (e) => {
         this.onTouchMove(e);
       });
-      addListener(doc, 'touchend', e => {
+      addListener(doc, "touchend", (e) => {
         this.onTouchEndDocument(e);
       });
-      addListener(doc, 'gesturechange', e => {
+      addListener(doc, "gesturechange", (e) => {
         this.onGestureChangeDocument(e);
       });
     } else {
-      addListener(container, 'mousedown', e => {
+      addListener(container, "mousedown", (e) => {
         this.onMouseDown(e);
       });
-      addListener(doc, 'mousemove', e => {
+      addListener(doc, "mousemove", (e) => {
         this.onMouseMoveDocument(e);
       });
-      addListener(container, 'mousemove', e => {
+      addListener(container, "mousemove", (e) => {
         this.onMouseMove(e);
       });
-      addListener(doc, 'mouseup', e => {
+      addListener(doc, "mouseup", (e) => {
         this.onMouseUpDocument(e);
       });
-      addListener(container, 'mouseup', e => {
+      addListener(container, "mouseup", (e) => {
         this.onMouseUp(e);
       });
-      addListener(container, 'dblclick', e => {
+      addListener(container, "dblclick", (e) => {
         this.onDoubleClick(e);
       });
-      addListener(container, 'mousewheel', e => {
+      addListener(container, "mousewheel", (e) => {
         this.onMouseWheel(e);
       });
-      addListener(container, 'DOMMouseScroll', e => {
+      addListener(container, "DOMMouseScroll", (e) => {
         this.onMouseWheel(e);
       });
-      addListener(container, 'contextmenu', e => {
+      addListener(container, "contextmenu", (e) => {
         this.onContextMenu(e);
       });
     }
 
     let resizeTimer;
-    addListener(window, 'resize', e => {
+    addListener(window, "resize", (e) => {
       if (resizeTimer) {
         return;
       }
@@ -113,7 +113,7 @@ class Events {
     });
   }
 
-  cancelEvent (e) {
+  cancelEvent(e) {
     if (e.preventDefault) {
       e.preventDefault();
     }
@@ -123,19 +123,19 @@ class Events {
     e.returnValue = false;
   }
 
-  onDoubleClick (e) {
+  onDoubleClick(e) {
     APP.view.speedUp();
     this.cancelEvent(e);
 
     const pos = getEventXY(e);
-    this.emit('doubleclick', { x: pos.x, y: pos.y });
+    this.emit("doubleclick", { x: pos.x, y: pos.y });
 
     if (!this.isDisabled) {
       APP.setZoom(APP.zoom + 1, e);
     }
   }
 
-  onMouseDown (e) {
+  onMouseDown(e) {
     APP.view.speedUp();
     this.cancelEvent(e);
 
@@ -147,23 +147,26 @@ class Events {
     this.prevY = e.clientY;
     this.isClick = true;
 
-    if (((e.buttons === 1 || e.button === 0) && e.altKey) || e.buttons === 2 || e.button === 2) {
+    if (
+      ((e.buttons === 1 || e.button === 0) && e.altKey) ||
+      e.buttons === 2 ||
+      e.button === 2
+    ) {
       this.button = 2;
     } else if (e.buttons === 1 || e.button === 0) {
       this.button = 0;
     }
 
     const pos = getEventXY(e);
-    this.emit('pointerdown', { x: pos.x, y: pos.y, button: this.button });
+    this.emit("pointerdown", { x: pos.x, y: pos.y, button: this.button });
   }
 
-  onMouseMoveDocument (e) {
+  onMouseMoveDocument(e) {
     // detect if it is really a move after some tolerance
     if (this.isClick) {
-      const
-        dx = e.clientX-this.prevX,
-        dy = e.clientY-this.prevY;
-      this.isClick = (dx*dx+dy*dy < 15);
+      const dx = e.clientX - this.prevX,
+        dy = e.clientY - this.prevY;
+      this.isClick = dx * dx + dy * dy < 15;
     }
 
     if (this.button === 0) {
@@ -178,12 +181,12 @@ class Events {
     this.prevY = e.clientY;
   }
 
-  onMouseMove (e) {
+  onMouseMove(e) {
     const pos = getEventXY(e);
-    this.emit('pointermove', pos);
+    this.emit("pointermove", pos);
   }
 
-  onMouseUpDocument (e) {
+  onMouseUpDocument(e) {
     if (this.button === 0) {
       this.moveMap(e);
       this.button = null;
@@ -193,18 +196,21 @@ class Events {
     }
   }
 
-  onMouseUp (e) {
+  onMouseUp(e) {
     if (this.isClick) {
       const pos = getEventXY(e);
-      APP.view.Picking.getTarget(pos.x, pos.y, target => {
-        this.emit('pointerup', { features: target.features, marker: target.marker });
+      APP.view.Picking.getTarget(pos.x, pos.y, (target) => {
+        this.emit("pointerup", {
+          features: target.features,
+          marker: target.marker,
+        });
       });
     }
   }
 
-  onMouseWheel (e) {
+  onMouseWheel(e) {
     APP.view.speedUp();
-    this.cancelEvent(e);
+    //this.cancelEvent(e);
 
     let delta = 0;
     if (e.wheelDeltaY) {
@@ -221,13 +227,13 @@ class Events {
     }
   }
 
-  onContextMenu (e) {
+  onContextMenu(e) {
     this.cancelEvent(e);
   }
 
   //***************************************************************************
 
-  moveMap (e) {
+  moveMap(e) {
     if (this.isDisabled) {
       return;
     }
@@ -236,26 +242,25 @@ class Events {
     // the constant 0.86 was chosen experimentally for the map movement to be
     // "pinned" to the cursor movement when the map is shown top-down
 
-    const
-      scale = 0.86 * Math.pow(2, -APP.zoom),
-      lonScale = 1 / Math.cos(APP.position.latitude / 180 * Math.PI),
+    const scale = 0.86 * Math.pow(2, -APP.zoom),
+      lonScale = 1 / Math.cos((APP.position.latitude / 180) * Math.PI),
       dx = e.clientX - this.prevX,
       dy = e.clientY - this.prevY,
-      angle = APP.rotation * Math.PI / 180,
+      angle = (APP.rotation * Math.PI) / 180,
       vRight = [Math.cos(angle), Math.sin(angle)],
       vForward = [Math.cos(angle - Math.PI / 2), Math.sin(angle - Math.PI / 2)],
       dir = add2(mul2scalar(vRight, dx), mul2scalar(vForward, -dy));
 
     const newPosition = {
       longitude: APP.position.longitude - dir[0] * scale * lonScale,
-      latitude: APP.position.latitude + dir[1] * scale
+      latitude: APP.position.latitude + dir[1] * scale,
     };
 
     APP.setPosition(newPosition);
-    this.emit('move', newPosition);
+    this.emit("move", newPosition);
   }
 
-  rotateMap (e) {
+  rotateMap(e) {
     if (this.isDisabled) {
       return;
     }
@@ -266,21 +271,23 @@ class Events {
     APP.setTilt(this.prevTilt);
   }
 
-  emitGestureChange (e) {
-    const
-      t1 = e.touches[0],
+  emitGestureChange(e) {
+    const t1 = e.touches[0],
       t2 = e.touches[1],
       dx = t1.clientX - t2.clientX,
       dy = t1.clientY - t2.clientY,
       dist = dx * dx + dy * dy,
       angle = Math.atan2(dy, dx);
 
-    this.onGestureChangeDocument({ rotation: ((angle - this.startAngle) * (180 / Math.PI)) % 360, scale: Math.sqrt(dist / this.startDist) });
+    this.onGestureChangeDocument({
+      rotation: ((angle - this.startAngle) * (180 / Math.PI)) % 360,
+      scale: Math.sqrt(dist / this.startDist),
+    });
   }
 
   //***************************************************************************
 
-  onTouchStart (e) {
+  onTouchStart(e) {
     APP.view.speedUp();
     this.cancelEvent(e);
 
@@ -291,7 +298,7 @@ class Events {
 
     // gesture polyfill adapted from https://raw.githubusercontent.com/seznam/JAK/master/lib/polyfills/gesturechange.js
     // MIT License
-    if (e.touches.length === 2 && !('ongesturechange' in window)) {
+    if (e.touches.length === 2 && !("ongesturechange" in window)) {
       const t2 = e.touches[1];
       const dx = t1.clientX - t2.clientX;
       const dy = t1.clientY - t2.clientY;
@@ -306,10 +313,10 @@ class Events {
     this.prevX = t1.clientX;
     this.prevY = t1.clientY;
 
-    this.emit('pointerdown', { x: e.x, y: e.y, button: 0 });
+    this.emit("pointerdown", { x: e.x, y: e.y, button: 0 });
   }
 
-  onTouchMoveDocument (e) {
+  onTouchMoveDocument(e) {
     if (this.button === null) {
       return;
     }
@@ -320,34 +327,35 @@ class Events {
 
     // detect if it is really a move after some tolerance
     if (this.isClick) {
-      const
-        dx = t1.clientX-this.prevX,
-        dy = t1.clientY-this.prevY;
-      this.isClick = (dx*dx+dy*dy < 15);
+      const dx = t1.clientX - this.prevX,
+        dy = t1.clientY - this.prevY;
+      this.isClick = dx * dx + dy * dy < 15;
     }
-    
+
     if (e.touches.length > 1) {
-      APP.setTilt(this.prevTilt + (this.prevY - t1.clientY) * (360 / window.innerHeight));
+      APP.setTilt(
+        this.prevTilt + (this.prevY - t1.clientY) * (360 / window.innerHeight)
+      );
       this.prevTilt = APP.tilt;
-      if (!('ongesturechange' in window)) {
+      if (!("ongesturechange" in window)) {
         this.emitGestureChange(e);
       }
     } else {
       this.moveMap(t1);
     }
-    
+
     this.prevX = t1.clientX;
     this.prevY = t1.clientY;
   }
 
-  onTouchMove (e) {
+  onTouchMove(e) {
     if (e.touches.length === 1) {
       const pos = getEventXY(e.touches[0]);
-      this.emit('pointermove', { x: pos.x, y: pos.y, button: 0 });
+      this.emit("pointermove", { x: pos.x, y: pos.y, button: 0 });
     }
   }
 
-  onTouchEndDocument (e) {
+  onTouchEndDocument(e) {
     if (this.button === null) {
       return;
     }
@@ -358,17 +366,20 @@ class Events {
       this.button = null;
 
       if (!this.isClick) {
-        this.emit('pointerup', {});
+        this.emit("pointerup", {});
       } else {
         if (e.x === undefined) {
-          e.x = this.prevX <<0;
+          e.x = this.prevX << 0;
         }
         if (e.y === undefined) {
-          e.y = this.prevY <<0;
+          e.y = this.prevY << 0;
         }
         const pos = getEventXY(e);
-        APP.view.Picking.getTarget(pos.x, pos.y, target => {
-          this.emit('pointerup', { features: target.features, marker: target.marker });
+        APP.view.Picking.getTarget(pos.x, pos.y, (target) => {
+          this.emit("pointerup", {
+            features: target.features,
+            marker: target.marker,
+          });
         });
       }
     } else if (e.touches.length === 1) {
@@ -378,7 +389,7 @@ class Events {
     }
   }
 
-  onGestureChangeDocument (e) {
+  onGestureChangeDocument(e) {
     if (this.button === null) {
       return;
     }
@@ -391,26 +402,28 @@ class Events {
       APP.setRotation(this.prevRotation - e.rotation);
     }
 
-    this.emit('gesture', e);
+    this.emit("gesture", e);
   }
 
   //***************************************************************************
 
-  on (type, fn) {
+  on(type, fn) {
     (this.listeners[type] || (this.listeners[type] = [])).push(fn);
   }
 
-  off (type, fn) {
-    this.listeners[type] = (this.listeners[type] || []).filter(item => item !== fn);
+  off(type, fn) {
+    this.listeners[type] = (this.listeners[type] || []).filter(
+      (item) => item !== fn
+    );
   }
 
-  emit (type, payload) {
+  emit(type, payload) {
     if (this.listeners[type] === undefined) {
       return;
     }
 
     setTimeout(() => {
-      this.listeners[type].forEach(listener => listener(payload));
+      this.listeners[type].forEach((listener) => listener(payload));
     }, 0);
   }
 

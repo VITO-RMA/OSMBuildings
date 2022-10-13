@@ -34,7 +34,6 @@ let APP, GL;
  */
 
 class OSMBuildings {
-
   /**
    * @constructor
    * @param {Object} [options] OSMBuildings options
@@ -61,18 +60,21 @@ class OSMBuildings {
    * @param {Object} [options.style] Sets the default building style
    * @param {String} [options.style.color='rgb(220, 210, 200)'] Sets the default building color
    */
-  constructor (options = {}) {
+  constructor(options = {}) {
     APP = this; // refers to current instance. Should make other globals obsolete.
 
     if (options.style) {
       if (options.style.color || options.style.wallColor) {
-        DEFAULT_COLOR = Qolor.parse(options.style.color || options.style.wallColor).toArray();
+        DEFAULT_COLOR = Qolor.parse(
+          options.style.color || options.style.wallColor
+        ).toArray();
       }
     }
 
     this.view = new View();
     this.view.fogColor = Qolor.parse(options.fogColor || FOG_COLOR).toArray();
 
+    this.gridLayers = [];
     this.attribution = options.attribution || OSMBuildings.ATTRIBUTION;
 
     this.minZoom = Math.max(parseFloat(options.minZoom || MIN_ZOOM), MIN_ZOOM);
@@ -84,41 +86,49 @@ class OSMBuildings {
 
     this.bounds = options.bounds;
 
-    this.position = options.position || { latitude: 52.520000, longitude: 13.410000 };
-    this.zoom = options.zoom || (this.minZoom + (this.maxZoom - this.minZoom) / 2);
+    this.position = options.position || { latitude: 52.52, longitude: 13.41 };
+    this.zoom =
+      options.zoom || this.minZoom + (this.maxZoom - this.minZoom) / 2;
     this.rotation = options.rotation || 0;
     this.tilt = options.tilt || 0;
+    this.options = options.headers
+      ? { headers: { ...options.headers } }
+      : undefined;
 
     const numProc = Math.min(window.navigator.hardwareConcurrency || 2, 4);
 
-    const blob = new Blob([workers.feature], { type: 'application/javascript' });
+    const blob = new Blob([workers.feature], {
+      type: "application/javascript",
+    });
     this.workers = new WorkerPool(URL.createObjectURL(blob), numProc * 4);
 
     //*** create container ********************************
 
     this.domNode = options.container;
-    if (typeof this.domNode === 'string') {
+    if (typeof this.domNode === "string") {
       this.domNode = document.getElementById(options.container);
     }
 
-    this.container = document.createElement('DIV');
-    this.container.className = 'osmb';
+    this.container = document.createElement("DIV");
+    this.container.className = "osmb";
     if (this.domNode.offsetHeight === 0) {
-      this.domNode.style.height = '100%';
-      console.warn('Container height should be set. Now defaults to 100%.');
+      this.domNode.style.height = "100%";
+      console.warn("Container height should be set. Now defaults to 100%.");
     }
     this.domNode.appendChild(this.container);
 
     //*** create canvas ***********************************
 
-    this.canvas = document.createElement('CANVAS');
-    this.canvas.className = 'osmb-viewport';
+    this.canvas = document.createElement("CANVAS");
+    this.canvas.className = "osmb-viewport";
 
     // const devicePixelRatio = window.devicePixelRatio || 1;
     const devicePixelRatio = 1; // this also affects building height and zoom
 
-    this.canvas.width = this.width = this.domNode.offsetWidth*devicePixelRatio;
-    this.canvas.height = this.height = this.domNode.offsetHeight*devicePixelRatio;
+    this.canvas.width = this.width =
+      this.domNode.offsetWidth * devicePixelRatio;
+    this.canvas.height = this.height =
+      this.domNode.offsetHeight * devicePixelRatio;
     this.container.appendChild(this.canvas);
 
     this.glx = new GLX(this.canvas, options.fastMode);
@@ -136,33 +146,33 @@ class OSMBuildings {
     this._getStateFromUrl();
     if (options.state) {
       this._setStateToUrl();
-      this.events.on('change', e => {
+      this.events.on("change", (e) => {
         this._setStateToUrl();
       });
     }
 
-    this._attribution = document.createElement('DIV');
-    this._attribution.className = 'osmb-attribution';
+    this._attribution = document.createElement("DIV");
+    this._attribution.className = "osmb-attribution";
     this.container.appendChild(this._attribution);
     this._updateAttribution();
 
     this.setDate(new Date());
     this.view.start();
 
-    this.emit('load', this);
+    this.emit("load", this);
   }
 
   /**
    * DEPRECATED
    */
-  appendTo () {}
+  appendTo() {}
 
-    /**
+  /**
    * Adds an event listener
    * @param {String} type Event type to listen for
    * @param {eventCallback} fn Callback function
    */
-  on (type, fn) {
+  on(type, fn) {
     this.events.on(type, fn);
   }
 
@@ -171,7 +181,7 @@ class OSMBuildings {
    * @param {String} type Event type to listen for
    * @param {eventCallback} [fn] If callback is given, only remove that particular listener
    */
-  off (type, fn) {
+  off(type, fn) {
     this.events.off(type, fn);
   }
 
@@ -180,7 +190,7 @@ class OSMBuildings {
    * @param {String} event Event type to listen for
    * @param {} [payload] Any kind of payload
    */
-  emit (type, payload) {
+  emit(type, payload) {
     this.events.emit(type, payload);
   }
 
@@ -188,8 +198,8 @@ class OSMBuildings {
    * Set date for shadow calculations
    * @param {Date} date
    */
-  setDate (date) {
-    View.Sun.setDate(typeof date === 'string' ? new Date(date) : date);
+  setDate(date) {
+    View.Sun.setDate(typeof date === "string" ? new Date(date) : date);
   }
 
   /**
@@ -199,8 +209,12 @@ class OSMBuildings {
    * @param {Number} altitude Altitude of the point
    * @return {Object} Screen position in pixels { x, y }
    */
-  project (latitude, longitude, altitude) {
-    const worldPos = [(longitude - this.position.longitude) * METERS_PER_DEGREE_LONGITUDE, -(latitude - this.position.latitude) * METERS_PER_DEGREE_LATITUDE, altitude];
+  project(latitude, longitude, altitude) {
+    const worldPos = [
+      (longitude - this.position.longitude) * METERS_PER_DEGREE_LONGITUDE,
+      -(latitude - this.position.latitude) * METERS_PER_DEGREE_LATITUDE,
+      altitude,
+    ];
 
     // takes current cam pos into account.
     let posNDC = transformVec3(this.view.viewProjMatrix.data, worldPos);
@@ -209,7 +223,7 @@ class OSMBuildings {
     return {
       x: posNDC[0] * this.width,
       y: (1 - posNDC[1]) * this.height,
-      z: posNDC[2]
+      z: posNDC[2],
     };
   }
 
@@ -220,7 +234,7 @@ class OSMBuildings {
    * @param {Number} y Y position om screen
    * @return {Object} Geographic position { latitude, longitude }
    */
-  unproject (x, y) {
+  unproject(x, y) {
     const inverseViewMatrix = GLX.Matrix.invert(this.view.viewProjMatrix.data);
     // convert window/viewport coordinates to NDC [0..1]. Note that the browser
     // screen coordinates are y-down, while the WebGL NDC coordinates are y-up,
@@ -229,21 +243,27 @@ class OSMBuildings {
     let posNDC = [x / this.width, 1 - y / this.height];
     posNDC = add2(mul2scalar(posNDC, 2.0), [-1, -1, -1]); // [0..1] to [-1..1];
 
-    const worldPos = getIntersectionWithXYPlane(posNDC[0], posNDC[1], inverseViewMatrix);
+    const worldPos = getIntersectionWithXYPlane(
+      posNDC[0],
+      posNDC[1],
+      inverseViewMatrix
+    );
     if (worldPos === undefined) {
       return;
     }
 
     return {
-      longitude: this.position.longitude + worldPos[0] / METERS_PER_DEGREE_LONGITUDE,
-      latitude: this.position.latitude - worldPos[1] / METERS_PER_DEGREE_LATITUDE
+      longitude:
+        this.position.longitude + worldPos[0] / METERS_PER_DEGREE_LONGITUDE,
+      latitude:
+        this.position.latitude - worldPos[1] / METERS_PER_DEGREE_LATITUDE,
     };
   }
 
   /**
    * Removes a feature, layer or marker from the map.
    */
-  remove (item) {
+  remove(item) {
     if (item.destroy) {
       item.destroy();
     }
@@ -268,9 +288,9 @@ class OSMBuildings {
    * @param {Boolean} [options.swapYZ] Swap y and z coordinates. Use this if your model is standing upright on one side
    * @return {Object} The added object
    */
-  addOBJ (url, position, options = {}) {
+  addOBJ(url, position, options = {}) {
     options.position = position;
-    return new Feature('OBJ', url, options);
+    return new Feature("OBJ", url, options);
   }
 
   /**
@@ -287,8 +307,8 @@ class OSMBuildings {
    * @param {Boolean} [options.fadeIn=true] DEPRECATED Fade GeoJSON features; if `false`, then display immediately
    * @return {Object} The added object
    */
-  addGeoJSON (url, options) {
-    return new Feature('GeoJSON', url, options);
+  addGeoJSON(url, options) {
+    return new Feature("GeoJSON", url, options);
   }
 
   // TODO: allow more data layers later on
@@ -302,7 +322,7 @@ class OSMBuildings {
    * @param {Number} [options.maxZoom=maxZoom] Maximum zoom level to show features from this layer. Defaults to and limited by global maxZoom.
    * @return {Object} The added layer object
    */
-  addGeoJSONTiles (url, options = {}) {
+  addGeoJSONTiles(url, options = {}) {
     options.fixedZoom = options.fixedZoom || 15;
     this.dataGrid = new Grid(url, GeoJSONTile, options, 2);
     return this.dataGrid;
@@ -313,9 +333,18 @@ class OSMBuildings {
    * @param {String} url The URL of the map server. This could be from Mapbox or other tile servers
    * @return {Object} The added layer object
    */
-  addMapTiles (url) {
-    this.basemapGrid = new Grid(url, BitmapTile, {}, 4);
+  addMapTiles(url) {
+    this.basemapGrid = new Grid(url, BitmapTile, this.options, 4);
     return this.basemapGrid;
+  }
+
+  /**
+   * Adds a 2d base map source. This renders below the buildings.
+   * @param {String} url The URL of the map server. This could be from Mapbox or other tile servers
+   * @return {Object} The added layer object
+   */
+  addGridLayer(url, options) {
+    this.gridLayers.push(new Grid(url, BitmapTile, options, 4));
   }
 
   /**
@@ -327,7 +356,7 @@ class OSMBuildings {
    * });
    * @param callback {Function} A function that does user defined filtering and highlights by returning a color. Can be falsy in order to reset highlighting.
    */
-  highlight (tintCallback) {
+  highlight(tintCallback) {
     return this.features.setTintCallback(tintCallback || (() => false));
   }
 
@@ -340,29 +369,29 @@ class OSMBuildings {
    * });
    * @param callback {Function} A function that does user defined filtering and hides if return value is true
    */
-  hide (zScaleCallback) {
+  hide(zScaleCallback) {
     this.features.setZScaleCallback(zScaleCallback);
   }
 
   /**
    * DEPRECATED
    */
-  show () {}
+  show() {}
 
   /**
    * DEPRECATED
    */
-  getTarget () {}
+  getTarget() {}
 
   /**
    * DEPRECATED
    */
-  screenshot () {}
+  screenshot() {}
 
   /**
    * @private
    */
-  _updateAttribution () {
+  _updateAttribution() {
     const attribution = [];
     if (this.attribution) {
       attribution.push(this.attribution);
@@ -372,15 +401,14 @@ class OSMBuildings {
     //     attribution.push(layer.attribution);
     //   }
     // });
-    this._attribution.innerHTML = attribution.join(' · ');
+    this._attribution.innerHTML = attribution.join(" · ");
   }
 
   /**
    * @private
    */
-  _getStateFromUrl () {
-    const
-      query = location.search,
+  _getStateFromUrl() {
+    const query = location.search,
       state = {};
 
     if (query) {
@@ -391,20 +419,26 @@ class OSMBuildings {
       });
     }
 
-    this.setPosition((state.lat !== undefined && state.lon !== undefined) ? {
-      latitude: parseFloat(state.lat),
-      longitude: parseFloat(state.lon)
-    } : this.position);
+    this.setPosition(
+      state.lat !== undefined && state.lon !== undefined
+        ? {
+            latitude: parseFloat(state.lat),
+            longitude: parseFloat(state.lon),
+          }
+        : this.position
+    );
 
     this.setZoom(state.zoom !== undefined ? parseFloat(state.zoom) : this.zoom);
-    this.setRotation(state.rotation !== undefined ? parseFloat(state.rotation) : this.rotation);
+    this.setRotation(
+      state.rotation !== undefined ? parseFloat(state.rotation) : this.rotation
+    );
     this.setTilt(state.tilt !== undefined ? parseFloat(state.tilt) : this.tilt);
   }
 
   /**
    * @private
    */
-  _setStateToUrl () {
+  _setStateToUrl() {
     if (!history.replaceState || this.stateDebounce) {
       return;
     }
@@ -412,12 +446,12 @@ class OSMBuildings {
     this.stateDebounce = setTimeout(() => {
       this.stateDebounce = null;
       const params = [];
-      params.push('lat=' + this.position.latitude.toFixed(6));
-      params.push('lon=' + this.position.longitude.toFixed(6));
-      params.push('zoom=' + this.zoom.toFixed(1));
-      params.push('tilt=' + this.tilt.toFixed(1));
-      params.push('rotation=' + this.rotation.toFixed(1));
-      history.replaceState({}, '', '?' + params.join('&'));
+      params.push("lat=" + this.position.latitude.toFixed(6));
+      params.push("lon=" + this.position.longitude.toFixed(6));
+      params.push("zoom=" + this.zoom.toFixed(1));
+      params.push("tilt=" + this.tilt.toFixed(1));
+      params.push("rotation=" + this.rotation.toFixed(1));
+      history.replaceState({}, "", "?" + params.join("&"));
     }, 1000);
   }
 
@@ -425,7 +459,7 @@ class OSMBuildings {
    * Disables map interaction
    * @param {Boolean} flag
    */
-  setDisabled (flag) {
+  setDisabled(flag) {
     this.events.isDisabled = !!flag;
   }
 
@@ -433,7 +467,7 @@ class OSMBuildings {
    * Checks for map interaction disabled
    * @return {Boolean} flag
    */
-  isDisabled () {
+  isDisabled() {
     return !!this.events.isDisabled;
   }
 
@@ -453,9 +487,9 @@ class OSMBuildings {
    *   so their top may be visible and they may still be out of bounds.
    * @return {Array} Bounding coordinates in unspecific order [{ latitude, longitude }, ...]
    */
-  getBounds () {
+  getBounds() {
     const viewQuad = this.view.getViewQuad();
-    return viewQuad.map(point => getPositionFromLocal(point));
+    return viewQuad.map((point) => getPositionFromLocal(point));
   }
 
   /**
@@ -464,7 +498,7 @@ class OSMBuildings {
    * @emits OSMBuildings#change
    * @param {Number} zoom The new zoom level
    */
-  setZoom (zoom, e) {
+  setZoom(zoom, e) {
     zoom = Math.max(zoom, this.minZoom);
     zoom = Math.min(zoom, this.maxZoom);
 
@@ -489,8 +523,8 @@ class OSMBuildings {
          this.center.y += dy;*/
       }
 
-      this.events.emit('zoom', { zoom: zoom });
-      this.events.emit('change');
+      this.events.emit("zoom", { zoom: zoom });
+      this.events.emit("change");
     }
   }
 
@@ -498,7 +532,7 @@ class OSMBuildings {
    * Get current zoom level
    * @return {Number} zoom level
    */
-  getZoom () {
+  getZoom() {
     return this.zoom;
   }
 
@@ -509,7 +543,7 @@ class OSMBuildings {
    * @param {Number} pos.longitude
    * @emits OSMBuildings#change
    */
-  setPosition (pos) {
+  setPosition(pos) {
     // if (isNaN(lat) || isNaN(lon)) {
     //   return;
     // }
@@ -517,16 +551,18 @@ class OSMBuildings {
 
     this.position = pos;
 
-    METERS_PER_DEGREE_LONGITUDE = METERS_PER_DEGREE_LATITUDE * Math.cos(this.position.latitude / 180 * Math.PI);
+    METERS_PER_DEGREE_LONGITUDE =
+      METERS_PER_DEGREE_LATITUDE *
+      Math.cos((this.position.latitude / 180) * Math.PI);
 
-    this.events.emit('change');
+    this.events.emit("change");
   }
 
   /**
    * Get map's current geographic position
    * @return {Object} Geographic position { latitude, longitude }
    */
-  getPosition () {
+  getPosition() {
     return this.position;
   }
 
@@ -540,11 +576,11 @@ class OSMBuildings {
    * @param {Integer} height
    * @emits OSMBuildings#resize
    */
-  setSize (width, height) {
+  setSize(width, height) {
     if (width !== this.width || height !== this.height) {
       this.width = width;
       this.height = height;
-      this.events.emit('resize', { width: this.width, height: this.height });
+      this.events.emit("resize", { width: this.width, height: this.height });
     }
   }
 
@@ -552,7 +588,7 @@ class OSMBuildings {
    * Get map's current view size in pixels
    * @return {Object} View size { width, height }
    */
-  getSize () {
+  getSize() {
     return { width: this.width, height: this.height };
   }
 
@@ -562,12 +598,12 @@ class OSMBuildings {
    * @emits OSMBuildings#rotate
    * @emits OSMBuildings#change
    */
-  setRotation (rotation) {
+  setRotation(rotation) {
     rotation = rotation % 360;
     if (this.rotation !== rotation) {
       this.rotation = rotation;
-      this.events.emit('rotate', { rotation: rotation });
-      this.events.emit('change');
+      this.events.emit("rotate", { rotation: rotation });
+      this.events.emit("change");
     }
   }
 
@@ -575,7 +611,7 @@ class OSMBuildings {
    * Get map's current rotation
    * @return {Number} Rotation in degrees
    */
-  getRotation () {
+  getRotation() {
     return this.rotation;
   }
 
@@ -585,12 +621,12 @@ class OSMBuildings {
    * @emits OSMBuildings#tilt
    * @emits OSMBuildings#change
    */
-  setTilt (tilt) {
+  setTilt(tilt) {
     tilt = clamp(tilt, 0, MAX_TILT);
     if (this.tilt !== tilt) {
       this.tilt = tilt;
-      this.events.emit('tilt', { tilt: tilt });
-      this.events.emit('change');
+      this.events.emit("tilt", { tilt: tilt });
+      this.events.emit("change");
     }
   }
 
@@ -598,7 +634,7 @@ class OSMBuildings {
    * Get map's current tilt
    * @return {Number} Tilt in degrees
    */
-  getTilt () {
+  getTilt() {
     return this.tilt;
   }
 
@@ -614,17 +650,18 @@ class OSMBuildings {
    * @param {String} [options.color] color which whole marker will be tinted
    * @return {Object} Marker
    */
-  addMarker (position, data, options) {
-   return new Marker(position, data, options);
+  addMarker(position, data, options) {
+    return new Marker(position, data, options);
   }
 
   /**
    * Destroys the map
    */
-  destroy () {
+  destroy() {
     this.view.destroy();
 
-    // this.basemapGrid.destroy();
+    this.gridLayers.forEach((grid) => grid.destroy());
+    if (this.basemapGrid) this.basemapGrid.destroy();
     // this.dataGrid.destroy();
 
     this.events.destroy();
@@ -635,14 +672,13 @@ class OSMBuildings {
     this.features.destroy();
     this.markers.destroy();
 
-    this.domNode.innerHTML = '';
+    this.domNode.innerHTML = "";
   }
 
   // destroyWorker () {
   //   this._worker.terminate();
   // }
 }
-
 
 /**
  * Fired when a 3d object has been loaded
@@ -719,14 +755,14 @@ OSMBuildings.VERSION = null;
  * (String) OSMBuildings attribution
  * @static
  */
-OSMBuildings.ATTRIBUTION = '<a href="https://osmbuildings.org/">© OSM Buildings</a>';
-
+OSMBuildings.ATTRIBUTION =
+  '<a href="https://osmbuildings.org/">© OSM Buildings</a>';
 
 //*****************************************************************************
 
-if (typeof define === 'function') {
+if (typeof define === "function") {
   define([], OSMBuildings);
-} else if (typeof module === 'object') {
+} else if (typeof module === "object") {
   module.exports = OSMBuildings;
 } else {
   window.OSMBuildings = OSMBuildings;

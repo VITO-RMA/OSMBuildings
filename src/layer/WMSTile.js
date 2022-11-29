@@ -1,4 +1,4 @@
-class Grid {
+class WMSTile {
   constructor(source, tileClass, options = {}, maxThreads = 2) {
     this.source = source;
     this.tileClass = tileClass;
@@ -8,6 +8,7 @@ class Grid {
 
     this.fixedZoom = options.fixedZoom;
     this.crs = options.crs;
+
     this.options = options.headers
       ? {
           headers: { ...options.headers },
@@ -42,7 +43,29 @@ class Grid {
 
   getURL(x, y, z) {
     const s = "abcd"[(x + y) % 4];
-    return pattern(this.source, { s: s, x: x, y: y, z: z });
+    const [plainUrl, unparsedQueryParams] = this.source.split("?");
+    const urlQueryParms = new URLSearchParams(unparsedQueryParams);
+    const bboxCoords = [
+      tile2lon(x, z),
+      tile2lat(y, z),
+      tile2lon(x, z) + 0.1,
+      tile2lat(y, z) + 0.1,
+    ];
+
+    urlQueryParms.set("bbox", bboxCoords.join(","));
+    urlQueryParms.delete("width");
+    urlQueryParms.delete("height");
+    urlQueryParms.delete("WIDTH");
+    urlQueryParms.delete("HEIGHT");
+    urlQueryParms.set("width", `256`);
+    urlQueryParms.set("height", `256`);
+
+    return `${pattern(plainUrl, {
+      s: s,
+      x: x,
+      y: y,
+      z: z,
+    })}?${urlQueryParms.toString()}`;
   }
 
   getClosestTiles(tileList, referencePoint) {

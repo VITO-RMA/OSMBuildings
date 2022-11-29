@@ -23,8 +23,8 @@ class Request {
 
       callback(null, req);
     };
-
-    req.open("GET", url);
+    const method = options ? options.method || "GET" : "GET";
+    req.open(method, url);
     if (options && options.headers) {
       for (let key in options.headers) {
         req.setRequestHeader(key, options.headers[key]);

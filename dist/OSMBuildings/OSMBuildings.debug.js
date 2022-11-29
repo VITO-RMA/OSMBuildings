@@ -1265,7 +1265,7 @@ shaders['markers'] = {"name":"markers","vs":"precision highp float; // is defaul
 
 shaders['markers_picking'] = {"name":"markers_picking","vs":"precision highp float; // is default in vertex shaders anyway, using highp fixes #49\nattribute vec4 aPosition;\nuniform vec3 uPickingColor;\nuniform mat4 uProjMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uModelMatrix;\nuniform float uFogDistance;\nuniform float uIndex;\nvarying vec3 vColor;\nvoid main() {\nmat4 modelView = uViewMatrix * uModelMatrix;\nmodelView[0][0] = 1.0;\nmodelView[0][1] = 0.0;\nmodelView[0][2] = 0.0;\nmodelView[1][0] = 0.0;\nmodelView[1][1] = 1.0;\nmodelView[1][2] = 0.0;\nmodelView[2][0] = 0.0;\nmodelView[2][1] = 0.0;\nmodelView[2][2] = 1.0;\nmat4 mvp = uProjMatrix * modelView;\nfloat reciprScaleOnscreen = 0.02;\nfloat w = (mvp * vec4(0,0,0,1)).w;\nw *= reciprScaleOnscreen;\nvec4 pos = vec4((aPosition.x * w), (aPosition.y * w) , aPosition.z * w, 1);\ngl_Position = mvp * pos;\n// vec4 pos = aPosition.x;\n// gl_Position = uMatrix * pos;\nvec4 mPosition = vec4(uModelMatrix * pos);\nfloat distance = length(mPosition);\nif (distance > uFogDistance) {\nvColor = vec3(0.0, 0.0, 0.0);\n} else {\nvColor = vec3(clamp(uIndex, 0.0, 1.0), uPickingColor.g, uPickingColor.b);\n}\n}\n","fs":"#ifdef GL_ES\nprecision mediump float;\n#endif\nvarying vec3 vColor;\nvoid main() {\ngl_FragColor = vec4(vColor, 1.0);\n}\n"};
 
-shaders['overlaymap'] = {"name":"overlaymap","vs":"precision highp float; // is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uViewMatrix;\nuniform mat4 uModelMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nvoid main() {\ngl_Position = uViewMatrix * aPosition;\nvTexCoord = aTexCoord;\nvec4 worldPos = uModelMatrix * aPosition;\nvec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\nverticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fs":"#ifdef GL_ES\nprecision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nuniform float uAlpha;\nvoid main() {\nfloat fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\nfogIntensity = clamp(fogIntensity, 0.0, 1.0);\nvec4 textCol = texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y));\n\ngl_FragColor = vec4(texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y)).rgb, 1.0-fogIntensity);\nif(uAlpha > -0.00001) {\n//gl_FragColor.w = clamp(uAlpha, 0.0, 1.0);\ngl_FragColor.r = textCol.r;\ngl_FragColor.g = textCol.g;\ngl_FragColor.b = textCol.b;\ngl_FragColor.a = clamp(uAlpha, 0.0, 1.0);\nif(textCol.a < 0.0001) {\ngl_FragColor.a = textCol.a;\n}\n}\n}\n"};
+shaders['overlaymap'] = {"name":"overlaymap","vs":"precision highp float; // is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uViewMatrix;\nuniform mat4 uModelMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nvoid main() {\ngl_Position = uViewMatrix * aPosition;\nvTexCoord = aTexCoord;\nvec4 worldPos = uModelMatrix * aPosition;\nvec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\nverticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fs":"#ifdef GL_ES\nprecision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nuniform float uAlpha;\nvoid main() {\nfloat fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\nfogIntensity = clamp(fogIntensity, 0.0, 1.0);\nvec4 textCol = texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y));\n\ngl_FragColor = vec4(texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y)).rgb, 1.0-fogIntensity);\nif(uAlpha > -0.00001) {\n//gl_FragColor.w = clamp(uAlpha, 0.0, 1.0);\ngl_FragColor.r = textCol.r;\ngl_FragColor.g = textCol.g;\ngl_FragColor.b = textCol.b;\ngl_FragColor.a = clamp(uAlpha-fogIntensity, 0.0, 1.0);\nif(textCol.a < 0.0001) {\ngl_FragColor.a = 0.0;\ngl_FragColor.r = 0.0;\ngl_FragColor.g = 0.0;\ngl_FragColor.b = 0.0;\n}\n}\n}\n"};
 
 shaders['basemap'] = {"name":"basemap","vs":"precision highp float; // is default in vertex shaders anyway, using highp fixes #49\n#define halfPi 1.57079632679\nattribute vec4 aPosition;\nattribute vec2 aTexCoord;\nuniform mat4 uViewMatrix;\nuniform mat4 uModelMatrix;\nuniform vec2 uViewDirOnMap;\nuniform vec2 uLowerEdgePoint;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nvoid main() {\ngl_Position = uViewMatrix * aPosition;\nvTexCoord = aTexCoord;\nvec4 worldPos = uModelMatrix * aPosition;\nvec2 dirFromLowerEdge = worldPos.xy / worldPos.w - uLowerEdgePoint;\nverticalDistanceToLowerEdge = dot(dirFromLowerEdge, uViewDirOnMap);\n}\n","fs":"#ifdef GL_ES\nprecision mediump float;\n#endif\nuniform sampler2D uTexIndex;\nuniform vec3 uFogColor;\nvarying vec2 vTexCoord;\nvarying float verticalDistanceToLowerEdge;\nuniform float uFogDistance;\nuniform float uFogBlurDistance;\nvoid main() {\nfloat fogIntensity = (verticalDistanceToLowerEdge - uFogDistance) / uFogBlurDistance;\nfogIntensity = clamp(fogIntensity, 0.0, 1.0);\ngl_FragColor = vec4(texture2D(uTexIndex, vec2(vTexCoord.x, 1.0-vTexCoord.y)).rgb, 1.0-fogIntensity);\n}\n"};
 
@@ -1286,7 +1286,7 @@ shaders['blur'] = {"name":"blur","vs":"precision highp float; // is default in v
 
 const workers = {};
 
-workers['feature'] = 'class Request{static load(e,t,r){const n=new XMLHttpRequest,o=setTimeout(e=>{4!==n.readyState&&(n.abort(),t("status"))},1e4);if(n.onreadystatechange=(()=>{4===n.readyState&&(clearTimeout(o),!n.status||n.status<200||n.status>299?t("status"):t(null,n))}),n.open("GET",e),r&&r.headers)for(let e in r.headers)n.setRequestHeader(e,r.headers[e]);return n.send(null),{abort:()=>{n.abort()}}}static getText(e,t,r){return this.load(e,(e,r)=>{e?t(e):void 0!==r.responseText?t(null,r.responseText):t("content")},r)}static getXML(e,t,r){return this.load(e,(e,r)=>{e?t(e):void 0!==r.responseXML?t(null,r.responseXML):t("content")},r)}static getJSON(e,t,r){return this.load(e,(r,n)=>{if(r)return void t(r);if(!n.responseText)return void t("content");let o;try{o=JSON.parse(n.responseText),t(null,o)}catch(r){console.warn(`Could not parse JSON from ${e}\\n${r.message}`),t("content")}},r)}}var w3cColors={aliceblue:"#f0f8ff",antiquewhite:"#faebd7",aqua:"#00ffff",aquamarine:"#7fffd4",azure:"#f0ffff",beige:"#f5f5dc",bisque:"#ffe4c4",black:"#000000",blanchedalmond:"#ffebcd",blue:"#0000ff",blueviolet:"#8a2be2",brown:"#a52a2a",burlywood:"#deb887",cadetblue:"#5f9ea0",chartreuse:"#7fff00",chocolate:"#d2691e",coral:"#ff7f50",cornflowerblue:"#6495ed",cornsilk:"#fff8dc",crimson:"#dc143c",cyan:"#00ffff",darkblue:"#00008b",darkcyan:"#008b8b",darkgoldenrod:"#b8860b",darkgray:"#a9a9a9",darkgrey:"#a9a9a9",darkgreen:"#006400",darkkhaki:"#bdb76b",darkmagenta:"#8b008b",darkolivegreen:"#556b2f",darkorange:"#ff8c00",darkorchid:"#9932cc",darkred:"#8b0000",darksalmon:"#e9967a",darkseagreen:"#8fbc8f",darkslateblue:"#483d8b",darkslategray:"#2f4f4f",darkslategrey:"#2f4f4f",darkturquoise:"#00ced1",darkviolet:"#9400d3",deeppink:"#ff1493",deepskyblue:"#00bfff",dimgray:"#696969",dimgrey:"#696969",dodgerblue:"#1e90ff",firebrick:"#b22222",floralwhite:"#fffaf0",forestgreen:"#228b22",fuchsia:"#ff00ff",gainsboro:"#dcdcdc",ghostwhite:"#f8f8ff",gold:"#ffd700",goldenrod:"#daa520",gray:"#808080",grey:"#808080",green:"#008000",greenyellow:"#adff2f",honeydew:"#f0fff0",hotpink:"#ff69b4",indianred:"#cd5c5c",indigo:"#4b0082",ivory:"#fffff0",khaki:"#f0e68c",lavender:"#e6e6fa",lavenderblush:"#fff0f5",lawngreen:"#7cfc00",lemonchiffon:"#fffacd",lightblue:"#add8e6",lightcoral:"#f08080",lightcyan:"#e0ffff",lightgoldenrodyellow:"#fafad2",lightgray:"#d3d3d3",lightgrey:"#d3d3d3",lightgreen:"#90ee90",lightpink:"#ffb6c1",lightsalmon:"#ffa07a",lightseagreen:"#20b2aa",lightskyblue:"#87cefa",lightslategray:"#778899",lightslategrey:"#778899",lightsteelblue:"#b0c4de",lightyellow:"#ffffe0",lime:"#00ff00",limegreen:"#32cd32",linen:"#faf0e6",magenta:"#ff00ff",maroon:"#800000",mediumaquamarine:"#66cdaa",mediumblue:"#0000cd",mediumorchid:"#ba55d3",mediumpurple:"#9370db",mediumseagreen:"#3cb371",mediumslateblue:"#7b68ee",mediumspringgreen:"#00fa9a",mediumturquoise:"#48d1cc",mediumvioletred:"#c71585",midnightblue:"#191970",mintcream:"#f5fffa",mistyrose:"#ffe4e1",moccasin:"#ffe4b5",navajowhite:"#ffdead",navy:"#000080",oldlace:"#fdf5e6",olive:"#808000",olivedrab:"#6b8e23",orange:"#ffa500",orangered:"#ff4500",orchid:"#da70d6",palegoldenrod:"#eee8aa",palegreen:"#98fb98",paleturquoise:"#afeeee",palevioletred:"#db7093",papayawhip:"#ffefd5",peachpuff:"#ffdab9",peru:"#cd853f",pink:"#ffc0cb",plum:"#dda0dd",powderblue:"#b0e0e6",purple:"#800080",rebeccapurple:"#663399",red:"#ff0000",rosybrown:"#bc8f8f",royalblue:"#4169e1",saddlebrown:"#8b4513",salmon:"#fa8072",sandybrown:"#f4a460",seagreen:"#2e8b57",seashell:"#fff5ee",sienna:"#a0522d",silver:"#c0c0c0",skyblue:"#87ceeb",slateblue:"#6a5acd",slategray:"#708090",slategrey:"#708090",snow:"#fffafa",springgreen:"#00ff7f",steelblue:"#4682b4",tan:"#d2b48c",teal:"#008080",thistle:"#d8bfd8",tomato:"#ff6347",turquoise:"#40e0d0",violet:"#ee82ee",wheat:"#f5deb3",white:"#ffffff",whitesmoke:"#f5f5f5",yellow:"#ffff00",yellowgreen:"#9acd32"};function hue2rgb(e,t,r){return r<0&&(r+=1),r>1&&(r-=1),r<1/6?e+6*(t-e)*r:r<.5?t:r<2/3?e+(t-e)*(2/3-r)*6:e}function clamp(e,t){if(void 0!==e)return Math.min(t,Math.max(0,e||0))}var Qolor=function(e,t,r,n){this.r=clamp(e,1),this.g=clamp(t,1),this.b=clamp(r,1),this.a=clamp(n,1)||1};Qolor.parse=function(e){if("string"==typeof e){var t;if(e=e.toLowerCase(),t=(e=w3cColors[e]||e).match(/^#?(\\w{2})(\\w{2})(\\w{2})$/))return new Qolor(parseInt(t[1],16)/255,parseInt(t[2],16)/255,parseInt(t[3],16)/255);if(t=e.match(/^#?(\\w)(\\w)(\\w)$/))return new Qolor(parseInt(t[1]+t[1],16)/255,parseInt(t[2]+t[2],16)/255,parseInt(t[3]+t[3],16)/255);if(t=e.match(/rgba?\\((\\d+)\\D+(\\d+)\\D+(\\d+)(\\D+([\\d.]+))?\\)/))return new Qolor(parseFloat(t[1])/255,parseFloat(t[2])/255,parseFloat(t[3])/255,t[4]?parseFloat(t[5]):1)}return new Qolor},Qolor.fromHSL=function(e,t,r,n){var o=(new Qolor).fromHSL(e,t,r);return o.a=void 0===n?1:n,o},Qolor.prototype={isValid:function(){return void 0!==this.r&&void 0!==this.g&&void 0!==this.b},toHSL:function(){if(this.isValid()){var e,t,r=Math.max(this.r,this.g,this.b),n=Math.min(this.r,this.g,this.b),o=(r+n)/2,a=r-n;if(a){switch(t=o>.5?a/(2-r-n):a/(r+n),r){case this.r:e=(this.g-this.b)/a+(this.g<this.b?6:0);break;case this.g:e=(this.b-this.r)/a+2;break;case this.b:e=(this.r-this.g)/a+4}e*=60}else e=t=0;return{h:e,s:t,l:o}}},fromHSL:function(e,t,r){if(0===t)return this.r=this.g=this.b=r,this;var n=r<.5?r*(1+t):r+t-r*t,o=2*r-n;return e/=360,this.r=hue2rgb(o,n,e+1/3),this.g=hue2rgb(o,n,e),this.b=hue2rgb(o,n,e-1/3),this},toString:function(){if(this.isValid())return 1===this.a?"#"+((1<<24)+(Math.round(255*this.r)<<16)+(Math.round(255*this.g)<<8)+Math.round(255*this.b)).toString(16).slice(1,7):"rgba("+[Math.round(255*this.r),Math.round(255*this.g),Math.round(255*this.b),this.a.toFixed(2)].join(",")+")"},toArray:function(){if(this.isValid)return[this.r,this.g,this.b]},hue:function(e){var t=this.toHSL();return this.fromHSL(t.h+e,t.s,t.l)},saturation:function(e){var t=this.toHSL();return this.fromHSL(t.h,t.s*e,t.l)},lightness:function(e){var t=this.toHSL();return this.fromHSL(t.h,t.s,t.l*e)},clone:function(){return new Qolor(this.r,this.g,this.b,this.a)}};class OBJ{constructor(e,t,r){this.flipYZ=r,this.materialIndex={},this.vertexIndex=[],t&&this.readMTL(t),this.meshes=[],this.readOBJ(e)}readMTL(e){const t=e.split(/[\\r\\n]/g);let r,n=[];t.forEach(e=>{const t=e.trim().split(/\\s+/);switch(t[0]){case"newmtl":r&&(this.materialIndex[r]=n),r=t[1],n=[];break;case"Kd":n=[parseFloat(t[1]),parseFloat(t[2]),parseFloat(t[3])]}}),r&&(this.materialIndex[r]=n),e=null}readOBJ(e){let t,r,n=[];e.split(/[\\r\\n]/g).forEach(e=>{const o=e.trim().split(/\\s+/);switch(o[0]){case"g":case"o":this.storeMesh(t,r,n),t=o[1],n=[];break;case"usemtl":this.storeMesh(t,r,n),this.materialIndex[o[1]]&&(r=this.materialIndex[o[1]]),n=[];break;case"v":this.flipYZ?this.vertexIndex.push([parseFloat(o[1]),parseFloat(o[3]),parseFloat(o[2])]):this.vertexIndex.push([parseFloat(o[1]),parseFloat(o[2]),parseFloat(o[3])]);break;case"f":n.push([parseFloat(o[1])-1,parseFloat(o[2])-1,parseFloat(o[3])-1])}}),this.storeMesh(t,r,n)}storeMesh(e,t,r){if(r.length){const n=this.createGeometry(r);this.meshes.push({vertices:n.vertices,normals:n.normals,texCoords:n.texCoords,height:n.height,color:t,id:e})}}sub(e,t){return[e[0]-t[0],e[1]-t[1],e[2]-t[2]]}len(e){return Math.sqrt(e[0]*e[0]+e[1]*e[1]+e[2]*e[2])}unit(e){const t=this.len(e);return[e[0]/t,e[1]/t,e[2]/t]}normal(e,t,r){const n=this.sub(e,t),o=this.sub(t,r);return this.unit([n[1]*o[2]-n[2]*o[1],n[2]*o[0]-n[0]*o[2],n[0]*o[1]-n[1]*o[0]])}createGeometry(e){const t=[],r=[],n=[];let o=-1/0;return e.forEach(e=>{const a=this.vertexIndex[e[0]],i=this.vertexIndex[e[1]],s=this.vertexIndex[e[2]],l=this.normal(a,i,s);t.push(a[0],a[2],a[1],i[0],i[2],i[1],s[0],s[2],s[1]),r.push(l[0],l[1],l[2],l[0],l[1],l[2],l[0],l[1],l[2]),n.push(0,0,0,0,0,0),o=Math.max(o,a[1],i[1],s[1])}),{vertices:t,normals:r,texCoords:n,height:o}}}OBJ.parse=function(e,t,r){return new OBJ(e,t,r).meshes};var earcut=function(){function e(e,o,a){a=a||2;var i,s,c,u,d,p,g,x=o&&o.length,v=x?o[0]*a:e.length,m=t(e,0,v,a,!0),y=[];if(!m)return y;if(x&&(m=function(e,n,o,a){var i,s,c,u,d,p=[];for(i=0,s=n.length;i<s;i++)c=n[i]*a,u=i<s-1?n[i+1]*a:e.length,(d=t(e,c,u,a,!1))===d.next&&(d.steiner=!0),p.push(h(d));for(p.sort(l),i=0;i<p.length;i++)f(p[i],o),o=r(o,o.next);return o}(e,o,m,a)),e.length>80*a){i=c=e[0],s=u=e[1];for(var b=a;b<v;b+=a)(d=e[b])<i&&(i=d),(p=e[b+1])<s&&(s=p),d>c&&(c=d),p>u&&(u=p);g=Math.max(c-i,u-s)}return n(m,y,a,i,s,g),y}function t(e,t,r,n,o){var a,i;if(o===w(e,t,r,n)>0)for(a=t;a<r;a+=n)i=y(a,e[a],e[a+1],i);else for(a=r-n;a>=t;a-=n)i=y(a,e[a],e[a+1],i);return i&&g(i,i.next)&&(b(i),i=i.next),i}function r(e,t){if(!e)return e;t||(t=e);var r,n=e;do{if(r=!1,n.steiner||!g(n,n.next)&&0!==p(n.prev,n,n.next))n=n.next;else{if(b(n),(n=t=n.prev)===n.next)return null;r=!0}}while(r||n!==t);return t}function n(e,t,l,f,h,u,d){if(e){!d&&u&&function(e,t,r,n){var o=e;do{null===o.z&&(o.z=c(o.x,o.y,t,r,n)),o.prevZ=o.prev,o.nextZ=o.next,o=o.next}while(o!==e);o.prevZ.nextZ=null,o.prevZ=null,function(e){var t,r,n,o,a,i,s,l,f=1;do{for(r=e,e=null,a=null,i=0;r;){for(i++,n=r,s=0,t=0;t<f&&(s++,n=n.nextZ);t++);for(l=f;s>0||l>0&&n;)0===s?(o=n,n=n.nextZ,l--):0!==l&&n?r.z<=n.z?(o=r,r=r.nextZ,s--):(o=n,n=n.nextZ,l--):(o=r,r=r.nextZ,s--),a?a.nextZ=o:e=o,o.prevZ=a,a=o;r=n}a.nextZ=null,f*=2}while(i>1)}(o)}(e,f,h,u);for(var p,g,x=e;e.prev!==e.next;)if(p=e.prev,g=e.next,u?a(e,f,h,u):o(e))t.push(p.i/l),t.push(e.i/l),t.push(g.i/l),b(e),e=g.next,x=g.next;else if((e=g)===x){d?1===d?n(e=i(e,t,l),t,l,f,h,u,2):2===d&&s(e,t,l,f,h,u):n(r(e),t,l,f,h,u,1);break}}}function o(e){var t=e.prev,r=e,n=e.next;if(p(t,r,n)>=0)return!1;for(var o=e.next.next;o!==e.prev;){if(u(t.x,t.y,r.x,r.y,n.x,n.y,o.x,o.y)&&p(o.prev,o,o.next)>=0)return!1;o=o.next}return!0}function a(e,t,r,n){var o=e.prev,a=e,i=e.next;if(p(o,a,i)>=0)return!1;for(var s=o.x<a.x?o.x<i.x?o.x:i.x:a.x<i.x?a.x:i.x,l=o.y<a.y?o.y<i.y?o.y:i.y:a.y<i.y?a.y:i.y,f=o.x>a.x?o.x>i.x?o.x:i.x:a.x>i.x?a.x:i.x,h=o.y>a.y?o.y>i.y?o.y:i.y:a.y>i.y?a.y:i.y,d=c(s,l,t,r,n),g=c(f,h,t,r,n),x=e.nextZ;x&&x.z<=g;){if(x!==e.prev&&x!==e.next&&u(o.x,o.y,a.x,a.y,i.x,i.y,x.x,x.y)&&p(x.prev,x,x.next)>=0)return!1;x=x.nextZ}for(x=e.prevZ;x&&x.z>=d;){if(x!==e.prev&&x!==e.next&&u(o.x,o.y,a.x,a.y,i.x,i.y,x.x,x.y)&&p(x.prev,x,x.next)>=0)return!1;x=x.prevZ}return!0}function i(e,t,r){var n=e;do{var o=n.prev,a=n.next.next;!g(o,a)&&x(o,n,n.next,a)&&v(o,a)&&v(a,o)&&(t.push(o.i/r),t.push(n.i/r),t.push(a.i/r),b(n),b(n.next),n=e=a),n=n.next}while(n!==e);return n}function s(e,t,o,a,i,s){var l=e;do{for(var f=l.next.next;f!==l.prev;){if(l.i!==f.i&&d(l,f)){var c=m(l,f);return l=r(l,l.next),c=r(c,c.next),n(l,t,o,a,i,s),void n(c,t,o,a,i,s)}f=f.next}l=l.next}while(l!==e)}function l(e,t){return e.x-t.x}function f(e,t){if(t=function(e,t){var r,n=t,o=e.x,a=e.y,i=-1/0;do{if(a<=n.y&&a>=n.next.y){var s=n.x+(a-n.y)*(n.next.x-n.x)/(n.next.y-n.y);if(s<=o&&s>i){if(i=s,s===o){if(a===n.y)return n;if(a===n.next.y)return n.next}r=n.x<n.next.x?n:n.next}}n=n.next}while(n!==t);if(!r)return null;if(o===i)return r.prev;var l,f=r,c=r.x,h=r.y,d=1/0;n=r.next;for(;n!==f;)o>=n.x&&n.x>=c&&u(a<h?o:i,a,c,h,a<h?i:o,a,n.x,n.y)&&((l=Math.abs(a-n.y)/(o-n.x))<d||l===d&&n.x>r.x)&&v(n,e)&&(r=n,d=l),n=n.next;return r}(e,t)){var n=m(t,e);r(n,n.next)}}function c(e,t,r,n,o){return(e=1431655765&((e=858993459&((e=252645135&((e=16711935&((e=32767*(e-r)/o)|e<<8))|e<<4))|e<<2))|e<<1))|(t=1431655765&((t=858993459&((t=252645135&((t=16711935&((t=32767*(t-n)/o)|t<<8))|t<<4))|t<<2))|t<<1))<<1}function h(e){var t=e,r=e;do{t.x<r.x&&(r=t),t=t.next}while(t!==e);return r}function u(e,t,r,n,o,a,i,s){return(o-i)*(t-s)-(e-i)*(a-s)>=0&&(e-i)*(n-s)-(r-i)*(t-s)>=0&&(r-i)*(a-s)-(o-i)*(n-s)>=0}function d(e,t){return e.next.i!==t.i&&e.prev.i!==t.i&&!function(e,t){var r=e;do{if(r.i!==e.i&&r.next.i!==e.i&&r.i!==t.i&&r.next.i!==t.i&&x(r,r.next,e,t))return!0;r=r.next}while(r!==e);return!1}(e,t)&&v(e,t)&&v(t,e)&&function(e,t){var r=e,n=!1,o=(e.x+t.x)/2,a=(e.y+t.y)/2;do{r.y>a!=r.next.y>a&&o<(r.next.x-r.x)*(a-r.y)/(r.next.y-r.y)+r.x&&(n=!n),r=r.next}while(r!==e);return n}(e,t)}function p(e,t,r){return(t.y-e.y)*(r.x-t.x)-(t.x-e.x)*(r.y-t.y)}function g(e,t){return e.x===t.x&&e.y===t.y}function x(e,t,r,n){return!!(g(e,t)&&g(r,n)||g(e,n)&&g(r,t))||p(e,t,r)>0!=p(e,t,n)>0&&p(r,n,e)>0!=p(r,n,t)>0}function v(e,t){return p(e.prev,e,e.next)<0?p(e,t,e.next)>=0&&p(e,e.prev,t)>=0:p(e,t,e.prev)<0||p(e,e.next,t)<0}function m(e,t){var r=new M(e.i,e.x,e.y),n=new M(t.i,t.x,t.y),o=e.next,a=t.prev;return e.next=t,t.prev=e,r.next=o,o.prev=r,n.next=r,r.prev=n,a.next=n,n.prev=a,n}function y(e,t,r,n){var o=new M(e,t,r);return n?(o.next=n.next,o.prev=n,n.next.prev=o,n.next=o):(o.prev=o,o.next=o),o}function b(e){e.next.prev=e.prev,e.prev.next=e.next,e.prevZ&&(e.prevZ.nextZ=e.nextZ),e.nextZ&&(e.nextZ.prevZ=e.prevZ)}function M(e,t,r){this.i=e,this.x=t,this.y=r,this.prev=null,this.next=null,this.z=null,this.prevZ=null,this.nextZ=null,this.steiner=!1}function w(e,t,r,n){for(var o=0,a=t,i=r-n;a<r;a+=n)o+=(e[i]-e[a])*(e[a+1]+e[i+1]),i=a;return o}return e.deviation=function(e,t,r,n){var o,a,i=t&&t.length,s=i?t[0]*r:e.length,l=Math.abs(w(e,0,s,r));if(i)for(o=0,a=t.length;o<a;o++){var f=t[o]*r,c=o<a-1?t[o+1]*r:e.length;l-=Math.abs(w(e,f,c,r))}var h=0;for(o=0,a=n.length;o<a;o+=3){var u=n[o]*r,d=n[o+1]*r,p=n[o+2]*r;h+=Math.abs((e[u]-e[p])*(e[d+1]-e[u+1])-(e[u]-e[d])*(e[p+1]-e[u+1]))}return 0===l&&0===h?0:Math.abs((h-l)/l)},e.flatten=function(e){for(var t=e[0][0].length,r={vertices:[],holes:[],dimensions:t},n=0,o=0;o<e.length;o++){for(var a=0;a<e[o].length;a++)for(var i=0;i<t;i++)r.vertices.push(e[o][a][i]);o>0&&(n+=e[o-1].length,r.holes.push(n))}return r},e}();const triangulate=function(){const e=10,t=[.8627450980392157,.8235294117647058,.7843137254901961],r=3,n={brick:"#cc7755",bronze:"#ffeecc",canvas:"#fff8f0",concrete:"#999999",copper:"#a0e0d0",glass:"#e8f8f8",gold:"#ffcc00",plants:"#009933",metal:"#aaaaaa",panel:"#fff8f0",plaster:"#999999",roof_tiles:"#f08060",silver:"#cccccc",slate:"#666666",stone:"#996666",tar_paper:"#333333",wood:"#deb887"},o={asphalt:"tar_paper",bitumen:"tar_paper",block:"stone",bricks:"brick",glas:"glass",glassfront:"glass",grass:"plants",masonry:"stone",granite:"stone",panels:"panel",paving_stones:"stone",plastered:"plaster",rooftiles:"roof_tiles",roofingfelt:"tar_paper",sandstone:"stone",sheet:"canvas",sheets:"canvas",shingle:"tar_paper",shingles:"tar_paper",slates:"slate",steel:"metal",tar:"tar_paper",tent:"canvas",thatch:"plants",tile:"roof_tiles",tiles:"roof_tiles"},a=.5,i=6378137*Math.PI/180;function s(e){return"string"!=typeof e?null:"#"===(e=e.toLowerCase())[0]?e:n[o[e]||e]||null}function l(e,r){r=r||0;let n,o=Qolor.parse(e);return[(n=o.isValid()?o.saturation(.7).toArray():t)[0]+r,n[1]+r,n[2]+r]}return function(t,n,o,f,c){const h=[i*Math.cos(o[1]/180*Math.PI),i];(function(e){switch(e.type){case"MultiPolygon":return e.coordinates;case"Polygon":return[e.coordinates];default:return[]}})(n.geometry).map(i=>{const u=function(e,t,r){return e.map((e,n)=>(0===n!==function(e){return 0<e.reduce((e,t,r,n)=>e+(r<n.length-1?(n[r+1][0]-t[0])*(n[r+1][1]+t[1]):0),0)}(e)&&e.reverse(),e.map(function(e){return[(e[0]-t[0])*r[0],-(e[1]-t[1])*r[1]]})))}(i,o,h);!function(t,n,o,i,f){const c=function(t,n){const o={};switch(o.center=[n.minX+(n.maxX-n.minX)/2,n.minY+(n.maxY-n.minY)/2],o.radius=(n.maxX-n.minX)/2,o.roofHeight=t.roofHeight||(t.roofLevels?t.roofLevels*r:0),t.roofShape){case"cone":case"pyramid":case"dome":case"onion":o.roofHeight=o.roofHeight||1*o.radius;break;case"gabled":case"hipped":case"half-hipped":case"skillion":case"gambrel":case"mansard":case"round":o.roofHeight=o.roofHeight||1*r;break;case"flat":o.roofHeight=0;break;default:o.roofHeight=0}let a;if(o.wallZ=t.minHeight||(t.minLevel?t.minLevel*r:0),void 0!==t.height)a=t.height,o.roofHeight=Math.min(o.roofHeight,a),o.roofZ=a-o.roofHeight,o.wallHeight=a-o.roofHeight-o.wallZ;else if(void 0!==t.levels)a=t.levels*r,o.roofZ=a,o.wallHeight=a-o.wallZ;else{switch(t.shape){case"cone":case"dome":case"pyramid":a=2*o.radius,o.roofHeight=0;break;case"sphere":a=4*o.radius,o.roofHeight=0;break;case"none":a=0;break;default:a=e}o.roofZ=a,o.wallHeight=a-o.wallZ}return o}(n,function(e){let t=1/0,r=1/0,n=-1/0,o=-1/0;for(let a=0;a<e.length;a++)t=Math.min(t,e[a][0]),r=Math.min(r,e[a][1]),n=Math.max(n,e[a][0]),o=Math.max(o,e[a][1]);return{minX:t,minY:r,maxX:n,maxY:o}}(o[0])),h=l(i||n.wallColor||n.color||s(n.material),f),u=l(i||n.roofColor||s(n.roofMaterial),f);switch(n.shape){case"cone":return void split.cylinder(t,c.center,c.radius,0,c.wallHeight,c.wallZ,h);case"dome":return void split.dome(t,c.center,c.radius,c.wallHeight,c.wallZ,h);case"pyramid":return void split.pyramid(t,o,c.center,c.wallHeight,c.wallZ,h);case"sphere":return void split.sphere(t,c.center,c.radius,c.wallHeight,c.wallZ,h)}switch(createRoof(t,n,o,c,u,h),n.shape){case"none":return;case"cylinder":return void split.cylinder(t,c.center,c.radius,c.radius,c.wallHeight,c.wallZ,h);default:let e=.2,r=.4;"glass"!==n.material&&(e=0,r=0,n.levels&&(r=parseFloat(n.levels)-parseFloat(n.minLevel||0)<<0)),split.extrusion(t,o,c.wallHeight,c.wallZ,h,[0,a,e/c.wallHeight,r/c.wallHeight])}}(t,n.properties,u,f,c)})}}();var createRoof;function roundPoint(e,t){return[Math.round(e[0]*t)/t,Math.round(e[1]*t)/t]}function pointOnSegment(e,t){return e=roundPoint(e,1e6),t[0]=roundPoint(t[0],1e6),t[1]=roundPoint(t[1],1e6),e[0]>=Math.min(t[0][0],t[1][0])&&e[0]<=Math.max(t[1][0],t[0][0])&&e[1]>=Math.min(t[0][1],t[1][1])&&e[1]<=Math.max(t[1][1],t[0][1])}function getVectorSegmentIntersection(e,t,r){var n,o,a,i,s,l=r[0],f=[r[1][0]-r[0][0],r[1][1]-r[0][1]];if(0!==t[0]||0!==f[0]){if(0!==t[0]&&(a=t[1]/t[0],n=e[1]-a*e[0]),0!==f[0]&&(i=f[1]/f[0],o=l[1]-i*l[0]),0===t[0]&&pointOnSegment(s=[e[0],i*e[0]+o],r))return s;if(0===f[0]&&pointOnSegment(s=[l[0],a*l[0]+n],r))return s;if(a!==i){var c=(o-n)/(a-i);return pointOnSegment(s=[c,a*c+n],r)?s:void 0}}}function getDistanceToLine(e,t){var r=t[0],n=t[1];if(r[0]!==n[0]||r[1]!==n[1]){var o=(n[1]-r[1])/(n[0]-r[0]),a=r[1]-o*r[0];if(0===o)return Math.abs(a-e[1]);if(o===1/0)return Math.abs(r[0]-e[0]);var i=-1/o,s=(e[1]-i*e[0]-a)/(o-i),l=o*s+a,f=e[0]-s,c=e[1]-l;return Math.sqrt(f*f+c*c)}}!function(){function e(e,t,r){const n=((e-90)/180-.5)*Math.PI;return function(e,t,r){for(var n,o=[],a=0;a<r.length-1;a++)if(void 0!==(n=getVectorSegmentIntersection(e,t,[r[a],r[a+1]]))){if(2===o.length)return;a++,r.splice(a,0,n),o.push(a)}if(!(o.length<2))return{index:o,roof:r}}(t,[Math.cos(n),Math.sin(n)],r)}function t(t,n,o,a,i,s,l){if(0,o.length>1||void 0===n.roofDirection)return r(t,n,o,i,s);const f=e(n.roofDirection,i.center,o[0]);if(!f)return r(t,n,o,i,s);const c=f.index;let h=f.roof;{const e=function(e,t){const r=[e[t[0]],e[t[1]]];return e.map(e=>getDistanceToLine(e,r))}(h,f.index),r=Math.max(...e);let n=(h=h.map((t,n)=>[t[0],t[1],(1-e[n]/r)*i.roofHeight])).slice(c[0],c[1]+1);split.polygon(t,[n],i.roofZ,s),n=(n=h.slice(c[1],h.length-1)).concat(h.slice(0,c[0]+1)),split.polygon(t,[n],i.roofZ,s);for(let e=0;e<h.length-1;e++)0===h[e][2]&&0===h[e+1][2]||split.quad(t,[h[e][0],h[e][1],i.roofZ+h[e][2]],[h[e][0],h[e][1],i.roofZ],[h[e+1][0],h[e+1][1],i.roofZ],[h[e+1][0],h[e+1][1],i.roofZ+h[e+1][2]],l)}}function r(e,t,r,n,o){"cylinder"===t.shape?split.circle(e,n.center,n.radius,n.roofZ,o):split.polygon(e,r,n.roofZ,o)}createRoof=function(e,n,o,a,i,s){switch(n.roofShape){case"cone":return function(e,t,r,n){split.polygon(e,t,r.roofZ,n),split.cylinder(e,r.center,r.radius,0,r.roofHeight,r.roofZ,n)}(e,o,a,i);case"dome":return function(e,t,r,n){split.polygon(e,t,r.roofZ,n),split.dome(e,r.center,r.radius,r.roofHeight,r.roofZ,n)}(e,o,a,i);case"pyramid":return function(e,t,r,n,o){"cylinder"===t.shape?split.cylinder(e,n.center,n.radius,0,n.roofHeight,n.roofZ,o):split.pyramid(e,r,n.center,n.roofHeight,n.roofZ,o)}(e,n,o,a,i);case"skillion":return function(e,t,n,o,a,i){if(void 0===t.roofDirection)return r(e,t,n,o,a);var s,l,f=t.roofDirection/180*Math.PI,c=1/0,h=-1/0;n[0].forEach(function(e){var t=e[1]*Math.cos(-f)+e[0]*Math.sin(-f);t<c&&(c=t,s=e),t>h&&(h=t,l=e)});var u=n[0],d=[Math.cos(f),Math.sin(f)],p=[s,[s[0]+d[0],s[1]+d[1]]],g=getDistanceToLine(l,p);n.forEach(function(e){e.forEach(function(e){var t=getDistanceToLine(e,p);e[2]=t/g*o.roofHeight})}),split.polygon(e,[u],o.roofZ,a),n.forEach(function(t){for(var r=0;r<t.length-1;r++)0===t[r][2]&&0===t[r+1][2]||split.quad(e,[t[r][0],t[r][1],o.roofZ+t[r][2]],[t[r][0],t[r][1],o.roofZ],[t[r+1][0],t[r+1][1],o.roofZ],[t[r+1][0],t[r+1][1],o.roofZ+t[r+1][2]],i)})}(e,n,o,a,i,s);case"gabled":case"hipped":case"half-hipped":case"gambrel":case"mansard":return t(e,n,o,0,a,i,s);case"round":return function(e,t,n,o,a,i){if(n.length>1||void 0===t.roofDirection)return r(e,t,n,o,a);return r(e,t,n,o,a)}(e,n,o,a,i);case"onion":return function(e,t,r,n){split.polygon(e,t,r.roofZ,n);for(var o,a,i=[{rScale:.8,hScale:0},{rScale:.9,hScale:.18},{rScale:.9,hScale:.35},{rScale:.8,hScale:.47},{rScale:.6,hScale:.59},{rScale:.5,hScale:.65},{rScale:.2,hScale:.82},{rScale:0,hScale:1}],s=0,l=i.length-1;s<l;s++)o=r.roofHeight*i[s].hScale,a=r.roofHeight*i[s+1].hScale,split.cylinder(e,r.center,r.radius*i[s].rScale,r.radius*i[s+1].rScale,a-o,r.roofZ+o,n)}(e,o,a,i);case"flat":default:return r(e,n,o,a,i)}}}();const split={NUM_Y_SEGMENTS:24,NUM_X_SEGMENTS:32,quad:(e,t,r,n,o,a)=>{split.triangle(e,t,r,n,a),split.triangle(e,n,o,t,a)},triangle:(e,t,r,n,o)=>{const a=vec3.normal(t,r,n);e.vertices.push(...t,...n,...r),e.normals.push(...a,...a,...a),e.colors.push(...o,...o,...o),e.texCoords.push(0,0,0,0,0,0)},circle:(e,t,r,n,o)=>{let a,i;n=n||0;for(let s=0;s<split.NUM_X_SEGMENTS;s++)a=s/split.NUM_X_SEGMENTS,i=(s+1)/split.NUM_X_SEGMENTS,split.triangle(e,[t[0]+r*Math.sin(a*Math.PI*2),t[1]+r*Math.cos(a*Math.PI*2),n],[t[0],t[1],n],[t[0]+r*Math.sin(i*Math.PI*2),t[1]+r*Math.cos(i*Math.PI*2),n],o)},polygon:(e,t,r,n)=>{r=r||0;const o=[],a=[];let i=0;t.forEach((e,n)=>{e.forEach(e=>{o.push(e[0],e[1],r+(e[2]||0))}),n&&(i+=t[n-1].length,a.push(i))});const s=earcut(o,a,3);for(let t=0;t<s.length-2;t+=3){const r=3*s[t],a=3*s[t+1],i=3*s[t+2];split.triangle(e,[o[r],o[r+1],o[r+2]],[o[a],o[a+1],o[a+2]],[o[i],o[i+1],o[i+2]],n)}},cube:(e,t,r,n,o,a,i,s)=>{const l=[o=o||0,a=a||0,i=i||0],f=[o+t,a,i],c=[o+t,a+r,i],h=[o,a+r,i],u=[o,a,i+n],d=[o+t,a,i+n],p=[o+t,a+r,i+n],g=[o,a+r,i+n];split.quad(e,f,l,h,c,s),split.quad(e,u,d,p,g,s),split.quad(e,l,f,d,u,s),split.quad(e,f,c,p,d,s),split.quad(e,c,h,g,p,s),split.quad(e,h,l,u,g,s)},cylinder:(e,t,r,n,o,a,i)=>{a=a||0;const s=split.NUM_X_SEGMENTS,l=2*Math.PI;let f,c,h,u,d,p;for(let g=0;g<s;g++)f=g/s*l,c=(g+1)/s*l,h=Math.sin(f),u=Math.cos(f),d=Math.sin(c),p=Math.cos(c),split.triangle(e,[t[0]+r*h,t[1]+r*u,a],[t[0]+n*d,t[1]+n*p,a+o],[t[0]+r*d,t[1]+r*p,a],i),0!==n&&split.triangle(e,[t[0]+n*h,t[1]+n*u,a+o],[t[0]+n*d,t[1]+n*p,a+o],[t[0]+r*h,t[1]+r*u,a],i)},dome:(e,t,r,n,o,a,i)=>{o=o||0;const s=split.NUM_Y_SEGMENTS/2,l=Math.PI/2,f=i?0:-l;let c,h,u,d,p,g,x,v,m,y;for(let i=0;i<s;i++)c=i/s*l+f,h=(i+1)/s*l+f,u=Math.cos(c),d=Math.sin(c),x=u*r,v=(p=Math.cos(h))*r,m=((g=Math.sin(h))-d)*n,y=o-g*n,split.cylinder(e,t,v,x,m,y,a)},sphere:(e,t,r,n,o,a)=>{o=o||0;let i=0;return i+=split.dome(e,t,r,n/2,o+n/2,a,!0),i+=split.dome(e,t,r,n/2,o+n/2,a)},pyramid:(e,t,r,n,o,a)=>{o=o||0;for(let i=0,s=(t=t[0]).length-1;i<s;i++)split.triangle(e,[t[i][0],t[i][1],o],[t[i+1][0],t[i+1][1],o],[r[0],r[1],o+n],a)},extrusion:(e,t,r,n,o,a)=>{n=n||0;let i,s,l,f,c,h,u,d,p,g,x,v,m=a[2]*r,y=a[3]*r;t.forEach(t=>{for(x=0,v=t.length-1;x<v;x++)i=t[x],s=t[x+1],l=vec2.len(vec2.sub(i,s)),f=[i[0],i[1],n],c=[s[0],s[1],n],h=[s[0],s[1],n+r],u=[i[0],i[1],n+r],d=vec3.normal(f,c,h),[].push.apply(e.vertices,[].concat(f,h,c,f,u,h)),[].push.apply(e.normals,[].concat(d,d,d,d,d,d)),[].push.apply(e.colors,[].concat(o,o,o,o,o,o)),p=a[0]*l<<0,g=a[1]*l<<0,e.texCoords.push(p,y,g,m,g,y,p,y,p,m,g,m)})}},vec3={len:e=>Math.sqrt(e[0]*e[0]+e[1]*e[1]+e[2]*e[2]),sub:(e,t)=>[e[0]-t[0],e[1]-t[1],e[2]-t[2]],unit:e=>{const t=vec3.len(e);return[e[0]/t,e[1]/t,e[2]/t]},normal:(e,t,r)=>{const n=vec3.sub(e,t),o=vec3.sub(t,r);return vec3.unit([n[1]*o[2]-n[2]*o[1],n[2]*o[0]-n[0]*o[2],n[0]*o[1]-n[1]*o[0]])}},vec2={len:e=>Math.sqrt(e[0]*e[0]+e[1]*e[1]),add:(e,t)=>[e[0]+t[0],e[1]+t[1]],sub:(e,t)=>[e[0]-t[0],e[1]-t[1]],dot:(e,t)=>e[1]*t[0]-e[0]*t[1],scale:(e,t)=>[e[0]*t,e[1]*t],equals:(e,t)=>e[0]===t[0]&&e[1]===t[1]};function getGeoJSONBounds(e){const t=e.type,r=e.coordinates,n=[1/0,1/0],o=[-1/0,-1/0];return"Polygon"===t&&r.length?(r[0].forEach(e=>{e[0]<n[0]&&(n[0]=e[0]),e[1]<n[1]&&(n[1]=e[1]),e[0]>o[0]&&(o[0]=e[0]),e[1]>o[1]&&(o[1]=e[1])}),{min:n,max:o}):"MultiPolygon"===t?(r.forEach(e=>{e[0]&&e[0].forEach(e=>{e[0]<n[0]&&(n[0]=e[0]),e[1]<n[1]&&(n[1]=e[1]),e[0]>o[0]&&(o[0]=e[0]),e[1]>o[1]&&(o[1]=e[1])})}),{min:n,max:o}):void 0}function getOBJBounds(e){const t=[1/0,1/0],r=[-1/0,-1/0];for(let n=0;n<e.length;n+=3)e[n]<t[0]&&(t[0]=e[0]),e[n+1]<t[1]&&(t[1]=e[n+1]),e[0]>r[0]&&(r[0]=e[0]),e[n+1]>r[1]&&(r[1]=e[n+1]);return t[0]*=METERS_PER_DEGREE_LATITUDE*Math.cos(t[1]/180*Math.PI),t[1]*=METERS_PER_DEGREE_LATITUDE,r[0]*=METERS_PER_DEGREE_LATITUDE*Math.cos(r[1]/180*Math.PI),r[1]*=METERS_PER_DEGREE_LATITUDE,{min:t,max:r}}const METERS_PER_DEGREE_LATITUDE=6378137*Math.PI/180;function getOrigin(e){const t=e.coordinates;switch(e.type){case"Point":return t;case"MultiPoint":case"LineString":return t[0];case"MultiLineString":case"Polygon":return t[0][0];case"MultiPolygon":return t[0][0][0]}}function getPickingColor(e){return[0,(255&++e)/255,(e>>8&255)/255]}function postResult(e,t,r){const n={items:e,position:t,vertices:new Float32Array(r.vertices),normals:new Float32Array(r.normals),colors:new Float32Array(r.colors),texCoords:new Float32Array(r.texCoords),heights:new Float32Array(r.heights),pickingColors:new Float32Array(r.pickingColors)};postMessage(n,[n.vertices.buffer,n.normals.buffer,n.colors.buffer,n.texCoords.buffer,n.heights.buffer,n.pickingColors.buffer])}function loadGeoJSON(e,t={}){"object"==typeof e?(postMessage("load"),processGeoJSON(e,t)):Request.getJSON(e,(e,r)=>{e?postMessage("error"):(postMessage("load"),processGeoJSON(r,t))})}function processGeoJSON(e,t){if(!e||!e.features.length)return void postMessage("error");const r={vertices:[],normals:[],colors:[],texCoords:[],heights:[],pickingColors:[]},n=[],o=getOrigin(e.features[0].geometry),a={latitude:o[1],longitude:o[0]};e.features.forEach((e,a)=>{const i=e.properties,s=t.id||e.id,l=getPickingColor(a);let f=r.vertices.length;triangulate(r,e,o),f=(r.vertices.length-f)/3;for(let e=0;e<f;e++)r.heights.push(i.height),r.pickingColors.push(...l);i.bounds=getGeoJSONBounds(e.geometry),i.geometry=e.geometry,n.push({id:s,properties:i,vertexCount:f})}),postResult(n,a,r)}function loadOBJ(e,t={}){Request.getText(e,(r,n)=>{if(r)return void postMessage("error");let o=n.match(/^mtllib\\s+(.*)$/m);o?Request.getText(e.replace(/[^\\/]+$/,"")+o[1],(e,r)=>{e?postMessage("error"):(postMessage("load"),processOBJ(n,r,t))}):(postMessage("load"),processOBJ(n,null,t))})}function processOBJ(e,t,r={}){const n={vertices:[],normals:[],colors:[],texCoords:[],heights:[],pickingColors:[]},o=[],a=Qolor.parse(r.color).toArray(),i=r.position;OBJ.parse(e,t,r.flipYZ).forEach((e,t)=>{n.vertices.push(...e.vertices),n.normals.push(...e.normals),n.texCoords.push(...e.texCoords);const i=r.id||e.id,s={},l=(i/2%2?-1:1)*(i%2?.03:.06),f=a||e.color||DEFAULT_COLOR,c=e.vertices.length/3,h=getPickingColor(t);for(let t=0;t<c;t++)n.colors.push(f[0]+l,f[1]+l,f[2]+l),n.heights.push(e.height),n.pickingColors.push(...h);s.height=e.height,s.color=e.color,s.bounds=getOBJBounds(e.vertices),o.push({id:i,properties:s,vertexCount:c})}),postResult(o,i,n)}onmessage=function(e){const t=e.data;"GeoJSON"===t.type&&loadGeoJSON(t.url,t.options),"OBJ"===t.type&&loadOBJ(t.url,t.options)};';
+workers['feature'] = 'class Request{static load(e,t,r){const n=new XMLHttpRequest,o=setTimeout(e=>{4!==n.readyState&&(n.abort(),t("status"))},1e4);n.onreadystatechange=(()=>{4===n.readyState&&(clearTimeout(o),!n.status||n.status<200||n.status>299?t("status"):t(null,n))});const a=r&&r.method||"GET";if(n.open(a,e),r&&r.headers)for(let e in r.headers)n.setRequestHeader(e,r.headers[e]);return n.send(null),{abort:()=>{n.abort()}}}static getText(e,t,r){return this.load(e,(e,r)=>{e?t(e):void 0!==r.responseText?t(null,r.responseText):t("content")},r)}static getXML(e,t,r){return this.load(e,(e,r)=>{e?t(e):void 0!==r.responseXML?t(null,r.responseXML):t("content")},r)}static getJSON(e,t,r){return this.load(e,(r,n)=>{if(r)return void t(r);if(!n.responseText)return void t("content");let o;try{o=JSON.parse(n.responseText),t(null,o)}catch(r){console.warn(`Could not parse JSON from ${e}\\n${r.message}`),t("content")}},r)}}var w3cColors={aliceblue:"#f0f8ff",antiquewhite:"#faebd7",aqua:"#00ffff",aquamarine:"#7fffd4",azure:"#f0ffff",beige:"#f5f5dc",bisque:"#ffe4c4",black:"#000000",blanchedalmond:"#ffebcd",blue:"#0000ff",blueviolet:"#8a2be2",brown:"#a52a2a",burlywood:"#deb887",cadetblue:"#5f9ea0",chartreuse:"#7fff00",chocolate:"#d2691e",coral:"#ff7f50",cornflowerblue:"#6495ed",cornsilk:"#fff8dc",crimson:"#dc143c",cyan:"#00ffff",darkblue:"#00008b",darkcyan:"#008b8b",darkgoldenrod:"#b8860b",darkgray:"#a9a9a9",darkgrey:"#a9a9a9",darkgreen:"#006400",darkkhaki:"#bdb76b",darkmagenta:"#8b008b",darkolivegreen:"#556b2f",darkorange:"#ff8c00",darkorchid:"#9932cc",darkred:"#8b0000",darksalmon:"#e9967a",darkseagreen:"#8fbc8f",darkslateblue:"#483d8b",darkslategray:"#2f4f4f",darkslategrey:"#2f4f4f",darkturquoise:"#00ced1",darkviolet:"#9400d3",deeppink:"#ff1493",deepskyblue:"#00bfff",dimgray:"#696969",dimgrey:"#696969",dodgerblue:"#1e90ff",firebrick:"#b22222",floralwhite:"#fffaf0",forestgreen:"#228b22",fuchsia:"#ff00ff",gainsboro:"#dcdcdc",ghostwhite:"#f8f8ff",gold:"#ffd700",goldenrod:"#daa520",gray:"#808080",grey:"#808080",green:"#008000",greenyellow:"#adff2f",honeydew:"#f0fff0",hotpink:"#ff69b4",indianred:"#cd5c5c",indigo:"#4b0082",ivory:"#fffff0",khaki:"#f0e68c",lavender:"#e6e6fa",lavenderblush:"#fff0f5",lawngreen:"#7cfc00",lemonchiffon:"#fffacd",lightblue:"#add8e6",lightcoral:"#f08080",lightcyan:"#e0ffff",lightgoldenrodyellow:"#fafad2",lightgray:"#d3d3d3",lightgrey:"#d3d3d3",lightgreen:"#90ee90",lightpink:"#ffb6c1",lightsalmon:"#ffa07a",lightseagreen:"#20b2aa",lightskyblue:"#87cefa",lightslategray:"#778899",lightslategrey:"#778899",lightsteelblue:"#b0c4de",lightyellow:"#ffffe0",lime:"#00ff00",limegreen:"#32cd32",linen:"#faf0e6",magenta:"#ff00ff",maroon:"#800000",mediumaquamarine:"#66cdaa",mediumblue:"#0000cd",mediumorchid:"#ba55d3",mediumpurple:"#9370db",mediumseagreen:"#3cb371",mediumslateblue:"#7b68ee",mediumspringgreen:"#00fa9a",mediumturquoise:"#48d1cc",mediumvioletred:"#c71585",midnightblue:"#191970",mintcream:"#f5fffa",mistyrose:"#ffe4e1",moccasin:"#ffe4b5",navajowhite:"#ffdead",navy:"#000080",oldlace:"#fdf5e6",olive:"#808000",olivedrab:"#6b8e23",orange:"#ffa500",orangered:"#ff4500",orchid:"#da70d6",palegoldenrod:"#eee8aa",palegreen:"#98fb98",paleturquoise:"#afeeee",palevioletred:"#db7093",papayawhip:"#ffefd5",peachpuff:"#ffdab9",peru:"#cd853f",pink:"#ffc0cb",plum:"#dda0dd",powderblue:"#b0e0e6",purple:"#800080",rebeccapurple:"#663399",red:"#ff0000",rosybrown:"#bc8f8f",royalblue:"#4169e1",saddlebrown:"#8b4513",salmon:"#fa8072",sandybrown:"#f4a460",seagreen:"#2e8b57",seashell:"#fff5ee",sienna:"#a0522d",silver:"#c0c0c0",skyblue:"#87ceeb",slateblue:"#6a5acd",slategray:"#708090",slategrey:"#708090",snow:"#fffafa",springgreen:"#00ff7f",steelblue:"#4682b4",tan:"#d2b48c",teal:"#008080",thistle:"#d8bfd8",tomato:"#ff6347",turquoise:"#40e0d0",violet:"#ee82ee",wheat:"#f5deb3",white:"#ffffff",whitesmoke:"#f5f5f5",yellow:"#ffff00",yellowgreen:"#9acd32"};function hue2rgb(e,t,r){return r<0&&(r+=1),r>1&&(r-=1),r<1/6?e+6*(t-e)*r:r<.5?t:r<2/3?e+(t-e)*(2/3-r)*6:e}function clamp(e,t){if(void 0!==e)return Math.min(t,Math.max(0,e||0))}var Qolor=function(e,t,r,n){this.r=clamp(e,1),this.g=clamp(t,1),this.b=clamp(r,1),this.a=clamp(n,1)||1};Qolor.parse=function(e){if("string"==typeof e){var t;if(e=e.toLowerCase(),t=(e=w3cColors[e]||e).match(/^#?(\\w{2})(\\w{2})(\\w{2})$/))return new Qolor(parseInt(t[1],16)/255,parseInt(t[2],16)/255,parseInt(t[3],16)/255);if(t=e.match(/^#?(\\w)(\\w)(\\w)$/))return new Qolor(parseInt(t[1]+t[1],16)/255,parseInt(t[2]+t[2],16)/255,parseInt(t[3]+t[3],16)/255);if(t=e.match(/rgba?\\((\\d+)\\D+(\\d+)\\D+(\\d+)(\\D+([\\d.]+))?\\)/))return new Qolor(parseFloat(t[1])/255,parseFloat(t[2])/255,parseFloat(t[3])/255,t[4]?parseFloat(t[5]):1)}return new Qolor},Qolor.fromHSL=function(e,t,r,n){var o=(new Qolor).fromHSL(e,t,r);return o.a=void 0===n?1:n,o},Qolor.prototype={isValid:function(){return void 0!==this.r&&void 0!==this.g&&void 0!==this.b},toHSL:function(){if(this.isValid()){var e,t,r=Math.max(this.r,this.g,this.b),n=Math.min(this.r,this.g,this.b),o=(r+n)/2,a=r-n;if(a){switch(t=o>.5?a/(2-r-n):a/(r+n),r){case this.r:e=(this.g-this.b)/a+(this.g<this.b?6:0);break;case this.g:e=(this.b-this.r)/a+2;break;case this.b:e=(this.r-this.g)/a+4}e*=60}else e=t=0;return{h:e,s:t,l:o}}},fromHSL:function(e,t,r){if(0===t)return this.r=this.g=this.b=r,this;var n=r<.5?r*(1+t):r+t-r*t,o=2*r-n;return e/=360,this.r=hue2rgb(o,n,e+1/3),this.g=hue2rgb(o,n,e),this.b=hue2rgb(o,n,e-1/3),this},toString:function(){if(this.isValid())return 1===this.a?"#"+((1<<24)+(Math.round(255*this.r)<<16)+(Math.round(255*this.g)<<8)+Math.round(255*this.b)).toString(16).slice(1,7):"rgba("+[Math.round(255*this.r),Math.round(255*this.g),Math.round(255*this.b),this.a.toFixed(2)].join(",")+")"},toArray:function(){if(this.isValid)return[this.r,this.g,this.b]},hue:function(e){var t=this.toHSL();return this.fromHSL(t.h+e,t.s,t.l)},saturation:function(e){var t=this.toHSL();return this.fromHSL(t.h,t.s*e,t.l)},lightness:function(e){var t=this.toHSL();return this.fromHSL(t.h,t.s,t.l*e)},clone:function(){return new Qolor(this.r,this.g,this.b,this.a)}};class OBJ{constructor(e,t,r){this.flipYZ=r,this.materialIndex={},this.vertexIndex=[],t&&this.readMTL(t),this.meshes=[],this.readOBJ(e)}readMTL(e){const t=e.split(/[\\r\\n]/g);let r,n=[];t.forEach(e=>{const t=e.trim().split(/\\s+/);switch(t[0]){case"newmtl":r&&(this.materialIndex[r]=n),r=t[1],n=[];break;case"Kd":n=[parseFloat(t[1]),parseFloat(t[2]),parseFloat(t[3])]}}),r&&(this.materialIndex[r]=n),e=null}readOBJ(e){let t,r,n=[];e.split(/[\\r\\n]/g).forEach(e=>{const o=e.trim().split(/\\s+/);switch(o[0]){case"g":case"o":this.storeMesh(t,r,n),t=o[1],n=[];break;case"usemtl":this.storeMesh(t,r,n),this.materialIndex[o[1]]&&(r=this.materialIndex[o[1]]),n=[];break;case"v":this.flipYZ?this.vertexIndex.push([parseFloat(o[1]),parseFloat(o[3]),parseFloat(o[2])]):this.vertexIndex.push([parseFloat(o[1]),parseFloat(o[2]),parseFloat(o[3])]);break;case"f":n.push([parseFloat(o[1])-1,parseFloat(o[2])-1,parseFloat(o[3])-1])}}),this.storeMesh(t,r,n)}storeMesh(e,t,r){if(r.length){const n=this.createGeometry(r);this.meshes.push({vertices:n.vertices,normals:n.normals,texCoords:n.texCoords,height:n.height,color:t,id:e})}}sub(e,t){return[e[0]-t[0],e[1]-t[1],e[2]-t[2]]}len(e){return Math.sqrt(e[0]*e[0]+e[1]*e[1]+e[2]*e[2])}unit(e){const t=this.len(e);return[e[0]/t,e[1]/t,e[2]/t]}normal(e,t,r){const n=this.sub(e,t),o=this.sub(t,r);return this.unit([n[1]*o[2]-n[2]*o[1],n[2]*o[0]-n[0]*o[2],n[0]*o[1]-n[1]*o[0]])}createGeometry(e){const t=[],r=[],n=[];let o=-1/0;return e.forEach(e=>{const a=this.vertexIndex[e[0]],i=this.vertexIndex[e[1]],s=this.vertexIndex[e[2]],l=this.normal(a,i,s);t.push(a[0],a[2],a[1],i[0],i[2],i[1],s[0],s[2],s[1]),r.push(l[0],l[1],l[2],l[0],l[1],l[2],l[0],l[1],l[2]),n.push(0,0,0,0,0,0),o=Math.max(o,a[1],i[1],s[1])}),{vertices:t,normals:r,texCoords:n,height:o}}}OBJ.parse=function(e,t,r){return new OBJ(e,t,r).meshes};var earcut=function(){function e(e,o,a){a=a||2;var i,s,c,u,d,p,g,x=o&&o.length,v=x?o[0]*a:e.length,m=t(e,0,v,a,!0),y=[];if(!m)return y;if(x&&(m=function(e,n,o,a){var i,s,c,u,d,p=[];for(i=0,s=n.length;i<s;i++)c=n[i]*a,u=i<s-1?n[i+1]*a:e.length,(d=t(e,c,u,a,!1))===d.next&&(d.steiner=!0),p.push(h(d));for(p.sort(l),i=0;i<p.length;i++)f(p[i],o),o=r(o,o.next);return o}(e,o,m,a)),e.length>80*a){i=c=e[0],s=u=e[1];for(var b=a;b<v;b+=a)(d=e[b])<i&&(i=d),(p=e[b+1])<s&&(s=p),d>c&&(c=d),p>u&&(u=p);g=Math.max(c-i,u-s)}return n(m,y,a,i,s,g),y}function t(e,t,r,n,o){var a,i;if(o===w(e,t,r,n)>0)for(a=t;a<r;a+=n)i=y(a,e[a],e[a+1],i);else for(a=r-n;a>=t;a-=n)i=y(a,e[a],e[a+1],i);return i&&g(i,i.next)&&(b(i),i=i.next),i}function r(e,t){if(!e)return e;t||(t=e);var r,n=e;do{if(r=!1,n.steiner||!g(n,n.next)&&0!==p(n.prev,n,n.next))n=n.next;else{if(b(n),(n=t=n.prev)===n.next)return null;r=!0}}while(r||n!==t);return t}function n(e,t,l,f,h,u,d){if(e){!d&&u&&function(e,t,r,n){var o=e;do{null===o.z&&(o.z=c(o.x,o.y,t,r,n)),o.prevZ=o.prev,o.nextZ=o.next,o=o.next}while(o!==e);o.prevZ.nextZ=null,o.prevZ=null,function(e){var t,r,n,o,a,i,s,l,f=1;do{for(r=e,e=null,a=null,i=0;r;){for(i++,n=r,s=0,t=0;t<f&&(s++,n=n.nextZ);t++);for(l=f;s>0||l>0&&n;)0===s?(o=n,n=n.nextZ,l--):0!==l&&n?r.z<=n.z?(o=r,r=r.nextZ,s--):(o=n,n=n.nextZ,l--):(o=r,r=r.nextZ,s--),a?a.nextZ=o:e=o,o.prevZ=a,a=o;r=n}a.nextZ=null,f*=2}while(i>1)}(o)}(e,f,h,u);for(var p,g,x=e;e.prev!==e.next;)if(p=e.prev,g=e.next,u?a(e,f,h,u):o(e))t.push(p.i/l),t.push(e.i/l),t.push(g.i/l),b(e),e=g.next,x=g.next;else if((e=g)===x){d?1===d?n(e=i(e,t,l),t,l,f,h,u,2):2===d&&s(e,t,l,f,h,u):n(r(e),t,l,f,h,u,1);break}}}function o(e){var t=e.prev,r=e,n=e.next;if(p(t,r,n)>=0)return!1;for(var o=e.next.next;o!==e.prev;){if(u(t.x,t.y,r.x,r.y,n.x,n.y,o.x,o.y)&&p(o.prev,o,o.next)>=0)return!1;o=o.next}return!0}function a(e,t,r,n){var o=e.prev,a=e,i=e.next;if(p(o,a,i)>=0)return!1;for(var s=o.x<a.x?o.x<i.x?o.x:i.x:a.x<i.x?a.x:i.x,l=o.y<a.y?o.y<i.y?o.y:i.y:a.y<i.y?a.y:i.y,f=o.x>a.x?o.x>i.x?o.x:i.x:a.x>i.x?a.x:i.x,h=o.y>a.y?o.y>i.y?o.y:i.y:a.y>i.y?a.y:i.y,d=c(s,l,t,r,n),g=c(f,h,t,r,n),x=e.nextZ;x&&x.z<=g;){if(x!==e.prev&&x!==e.next&&u(o.x,o.y,a.x,a.y,i.x,i.y,x.x,x.y)&&p(x.prev,x,x.next)>=0)return!1;x=x.nextZ}for(x=e.prevZ;x&&x.z>=d;){if(x!==e.prev&&x!==e.next&&u(o.x,o.y,a.x,a.y,i.x,i.y,x.x,x.y)&&p(x.prev,x,x.next)>=0)return!1;x=x.prevZ}return!0}function i(e,t,r){var n=e;do{var o=n.prev,a=n.next.next;!g(o,a)&&x(o,n,n.next,a)&&v(o,a)&&v(a,o)&&(t.push(o.i/r),t.push(n.i/r),t.push(a.i/r),b(n),b(n.next),n=e=a),n=n.next}while(n!==e);return n}function s(e,t,o,a,i,s){var l=e;do{for(var f=l.next.next;f!==l.prev;){if(l.i!==f.i&&d(l,f)){var c=m(l,f);return l=r(l,l.next),c=r(c,c.next),n(l,t,o,a,i,s),void n(c,t,o,a,i,s)}f=f.next}l=l.next}while(l!==e)}function l(e,t){return e.x-t.x}function f(e,t){if(t=function(e,t){var r,n=t,o=e.x,a=e.y,i=-1/0;do{if(a<=n.y&&a>=n.next.y){var s=n.x+(a-n.y)*(n.next.x-n.x)/(n.next.y-n.y);if(s<=o&&s>i){if(i=s,s===o){if(a===n.y)return n;if(a===n.next.y)return n.next}r=n.x<n.next.x?n:n.next}}n=n.next}while(n!==t);if(!r)return null;if(o===i)return r.prev;var l,f=r,c=r.x,h=r.y,d=1/0;n=r.next;for(;n!==f;)o>=n.x&&n.x>=c&&u(a<h?o:i,a,c,h,a<h?i:o,a,n.x,n.y)&&((l=Math.abs(a-n.y)/(o-n.x))<d||l===d&&n.x>r.x)&&v(n,e)&&(r=n,d=l),n=n.next;return r}(e,t)){var n=m(t,e);r(n,n.next)}}function c(e,t,r,n,o){return(e=1431655765&((e=858993459&((e=252645135&((e=16711935&((e=32767*(e-r)/o)|e<<8))|e<<4))|e<<2))|e<<1))|(t=1431655765&((t=858993459&((t=252645135&((t=16711935&((t=32767*(t-n)/o)|t<<8))|t<<4))|t<<2))|t<<1))<<1}function h(e){var t=e,r=e;do{t.x<r.x&&(r=t),t=t.next}while(t!==e);return r}function u(e,t,r,n,o,a,i,s){return(o-i)*(t-s)-(e-i)*(a-s)>=0&&(e-i)*(n-s)-(r-i)*(t-s)>=0&&(r-i)*(a-s)-(o-i)*(n-s)>=0}function d(e,t){return e.next.i!==t.i&&e.prev.i!==t.i&&!function(e,t){var r=e;do{if(r.i!==e.i&&r.next.i!==e.i&&r.i!==t.i&&r.next.i!==t.i&&x(r,r.next,e,t))return!0;r=r.next}while(r!==e);return!1}(e,t)&&v(e,t)&&v(t,e)&&function(e,t){var r=e,n=!1,o=(e.x+t.x)/2,a=(e.y+t.y)/2;do{r.y>a!=r.next.y>a&&o<(r.next.x-r.x)*(a-r.y)/(r.next.y-r.y)+r.x&&(n=!n),r=r.next}while(r!==e);return n}(e,t)}function p(e,t,r){return(t.y-e.y)*(r.x-t.x)-(t.x-e.x)*(r.y-t.y)}function g(e,t){return e.x===t.x&&e.y===t.y}function x(e,t,r,n){return!!(g(e,t)&&g(r,n)||g(e,n)&&g(r,t))||p(e,t,r)>0!=p(e,t,n)>0&&p(r,n,e)>0!=p(r,n,t)>0}function v(e,t){return p(e.prev,e,e.next)<0?p(e,t,e.next)>=0&&p(e,e.prev,t)>=0:p(e,t,e.prev)<0||p(e,e.next,t)<0}function m(e,t){var r=new M(e.i,e.x,e.y),n=new M(t.i,t.x,t.y),o=e.next,a=t.prev;return e.next=t,t.prev=e,r.next=o,o.prev=r,n.next=r,r.prev=n,a.next=n,n.prev=a,n}function y(e,t,r,n){var o=new M(e,t,r);return n?(o.next=n.next,o.prev=n,n.next.prev=o,n.next=o):(o.prev=o,o.next=o),o}function b(e){e.next.prev=e.prev,e.prev.next=e.next,e.prevZ&&(e.prevZ.nextZ=e.nextZ),e.nextZ&&(e.nextZ.prevZ=e.prevZ)}function M(e,t,r){this.i=e,this.x=t,this.y=r,this.prev=null,this.next=null,this.z=null,this.prevZ=null,this.nextZ=null,this.steiner=!1}function w(e,t,r,n){for(var o=0,a=t,i=r-n;a<r;a+=n)o+=(e[i]-e[a])*(e[a+1]+e[i+1]),i=a;return o}return e.deviation=function(e,t,r,n){var o,a,i=t&&t.length,s=i?t[0]*r:e.length,l=Math.abs(w(e,0,s,r));if(i)for(o=0,a=t.length;o<a;o++){var f=t[o]*r,c=o<a-1?t[o+1]*r:e.length;l-=Math.abs(w(e,f,c,r))}var h=0;for(o=0,a=n.length;o<a;o+=3){var u=n[o]*r,d=n[o+1]*r,p=n[o+2]*r;h+=Math.abs((e[u]-e[p])*(e[d+1]-e[u+1])-(e[u]-e[d])*(e[p+1]-e[u+1]))}return 0===l&&0===h?0:Math.abs((h-l)/l)},e.flatten=function(e){for(var t=e[0][0].length,r={vertices:[],holes:[],dimensions:t},n=0,o=0;o<e.length;o++){for(var a=0;a<e[o].length;a++)for(var i=0;i<t;i++)r.vertices.push(e[o][a][i]);o>0&&(n+=e[o-1].length,r.holes.push(n))}return r},e}();const triangulate=function(){const e=10,t=[.8627450980392157,.8235294117647058,.7843137254901961],r=3,n={brick:"#cc7755",bronze:"#ffeecc",canvas:"#fff8f0",concrete:"#999999",copper:"#a0e0d0",glass:"#e8f8f8",gold:"#ffcc00",plants:"#009933",metal:"#aaaaaa",panel:"#fff8f0",plaster:"#999999",roof_tiles:"#f08060",silver:"#cccccc",slate:"#666666",stone:"#996666",tar_paper:"#333333",wood:"#deb887"},o={asphalt:"tar_paper",bitumen:"tar_paper",block:"stone",bricks:"brick",glas:"glass",glassfront:"glass",grass:"plants",masonry:"stone",granite:"stone",panels:"panel",paving_stones:"stone",plastered:"plaster",rooftiles:"roof_tiles",roofingfelt:"tar_paper",sandstone:"stone",sheet:"canvas",sheets:"canvas",shingle:"tar_paper",shingles:"tar_paper",slates:"slate",steel:"metal",tar:"tar_paper",tent:"canvas",thatch:"plants",tile:"roof_tiles",tiles:"roof_tiles"},a=.5,i=6378137*Math.PI/180;function s(e){return"string"!=typeof e?null:"#"===(e=e.toLowerCase())[0]?e:n[o[e]||e]||null}function l(e,r){r=r||0;let n,o=Qolor.parse(e);return[(n=o.isValid()?o.saturation(.7).toArray():t)[0]+r,n[1]+r,n[2]+r]}return function(t,n,o,f,c){const h=[i*Math.cos(o[1]/180*Math.PI),i];(function(e){switch(e.type){case"MultiPolygon":return e.coordinates;case"Polygon":return[e.coordinates];default:return[]}})(n.geometry).map(i=>{const u=function(e,t,r){return e.map((e,n)=>(0===n!==function(e){return 0<e.reduce((e,t,r,n)=>e+(r<n.length-1?(n[r+1][0]-t[0])*(n[r+1][1]+t[1]):0),0)}(e)&&e.reverse(),e.map(function(e){return[(e[0]-t[0])*r[0],-(e[1]-t[1])*r[1]]})))}(i,o,h);!function(t,n,o,i,f){const c=function(t,n){const o={};switch(o.center=[n.minX+(n.maxX-n.minX)/2,n.minY+(n.maxY-n.minY)/2],o.radius=(n.maxX-n.minX)/2,o.roofHeight=t.roofHeight||(t.roofLevels?t.roofLevels*r:0),t.roofShape){case"cone":case"pyramid":case"dome":case"onion":o.roofHeight=o.roofHeight||1*o.radius;break;case"gabled":case"hipped":case"half-hipped":case"skillion":case"gambrel":case"mansard":case"round":o.roofHeight=o.roofHeight||1*r;break;case"flat":o.roofHeight=0;break;default:o.roofHeight=0}let a;if(o.wallZ=t.minHeight||(t.minLevel?t.minLevel*r:0),void 0!==t.height)a=t.height,o.roofHeight=Math.min(o.roofHeight,a),o.roofZ=a-o.roofHeight,o.wallHeight=a-o.roofHeight-o.wallZ;else if(void 0!==t.levels)a=t.levels*r,o.roofZ=a,o.wallHeight=a-o.wallZ;else{switch(t.shape){case"cone":case"dome":case"pyramid":a=2*o.radius,o.roofHeight=0;break;case"sphere":a=4*o.radius,o.roofHeight=0;break;case"none":a=0;break;default:a=e}o.roofZ=a,o.wallHeight=a-o.wallZ}return o}(n,function(e){let t=1/0,r=1/0,n=-1/0,o=-1/0;for(let a=0;a<e.length;a++)t=Math.min(t,e[a][0]),r=Math.min(r,e[a][1]),n=Math.max(n,e[a][0]),o=Math.max(o,e[a][1]);return{minX:t,minY:r,maxX:n,maxY:o}}(o[0])),h=l(i||n.wallColor||n.color||s(n.material),f),u=l(i||n.roofColor||s(n.roofMaterial),f);switch(n.shape){case"cone":return void split.cylinder(t,c.center,c.radius,0,c.wallHeight,c.wallZ,h);case"dome":return void split.dome(t,c.center,c.radius,c.wallHeight,c.wallZ,h);case"pyramid":return void split.pyramid(t,o,c.center,c.wallHeight,c.wallZ,h);case"sphere":return void split.sphere(t,c.center,c.radius,c.wallHeight,c.wallZ,h)}switch(createRoof(t,n,o,c,u,h),n.shape){case"none":return;case"cylinder":return void split.cylinder(t,c.center,c.radius,c.radius,c.wallHeight,c.wallZ,h);default:let e=.2,r=.4;"glass"!==n.material&&(e=0,r=0,n.levels&&(r=parseFloat(n.levels)-parseFloat(n.minLevel||0)<<0)),split.extrusion(t,o,c.wallHeight,c.wallZ,h,[0,a,e/c.wallHeight,r/c.wallHeight])}}(t,n.properties,u,f,c)})}}();var createRoof;function roundPoint(e,t){return[Math.round(e[0]*t)/t,Math.round(e[1]*t)/t]}function pointOnSegment(e,t){return e=roundPoint(e,1e6),t[0]=roundPoint(t[0],1e6),t[1]=roundPoint(t[1],1e6),e[0]>=Math.min(t[0][0],t[1][0])&&e[0]<=Math.max(t[1][0],t[0][0])&&e[1]>=Math.min(t[0][1],t[1][1])&&e[1]<=Math.max(t[1][1],t[0][1])}function getVectorSegmentIntersection(e,t,r){var n,o,a,i,s,l=r[0],f=[r[1][0]-r[0][0],r[1][1]-r[0][1]];if(0!==t[0]||0!==f[0]){if(0!==t[0]&&(a=t[1]/t[0],n=e[1]-a*e[0]),0!==f[0]&&(i=f[1]/f[0],o=l[1]-i*l[0]),0===t[0]&&pointOnSegment(s=[e[0],i*e[0]+o],r))return s;if(0===f[0]&&pointOnSegment(s=[l[0],a*l[0]+n],r))return s;if(a!==i){var c=(o-n)/(a-i);return pointOnSegment(s=[c,a*c+n],r)?s:void 0}}}function getDistanceToLine(e,t){var r=t[0],n=t[1];if(r[0]!==n[0]||r[1]!==n[1]){var o=(n[1]-r[1])/(n[0]-r[0]),a=r[1]-o*r[0];if(0===o)return Math.abs(a-e[1]);if(o===1/0)return Math.abs(r[0]-e[0]);var i=-1/o,s=(e[1]-i*e[0]-a)/(o-i),l=o*s+a,f=e[0]-s,c=e[1]-l;return Math.sqrt(f*f+c*c)}}!function(){function e(e,t,r){const n=((e-90)/180-.5)*Math.PI;return function(e,t,r){for(var n,o=[],a=0;a<r.length-1;a++)if(void 0!==(n=getVectorSegmentIntersection(e,t,[r[a],r[a+1]]))){if(2===o.length)return;a++,r.splice(a,0,n),o.push(a)}if(!(o.length<2))return{index:o,roof:r}}(t,[Math.cos(n),Math.sin(n)],r)}function t(t,n,o,a,i,s,l){if(0,o.length>1||void 0===n.roofDirection)return r(t,n,o,i,s);const f=e(n.roofDirection,i.center,o[0]);if(!f)return r(t,n,o,i,s);const c=f.index;let h=f.roof;{const e=function(e,t){const r=[e[t[0]],e[t[1]]];return e.map(e=>getDistanceToLine(e,r))}(h,f.index),r=Math.max(...e);let n=(h=h.map((t,n)=>[t[0],t[1],(1-e[n]/r)*i.roofHeight])).slice(c[0],c[1]+1);split.polygon(t,[n],i.roofZ,s),n=(n=h.slice(c[1],h.length-1)).concat(h.slice(0,c[0]+1)),split.polygon(t,[n],i.roofZ,s);for(let e=0;e<h.length-1;e++)0===h[e][2]&&0===h[e+1][2]||split.quad(t,[h[e][0],h[e][1],i.roofZ+h[e][2]],[h[e][0],h[e][1],i.roofZ],[h[e+1][0],h[e+1][1],i.roofZ],[h[e+1][0],h[e+1][1],i.roofZ+h[e+1][2]],l)}}function r(e,t,r,n,o){"cylinder"===t.shape?split.circle(e,n.center,n.radius,n.roofZ,o):split.polygon(e,r,n.roofZ,o)}createRoof=function(e,n,o,a,i,s){switch(n.roofShape){case"cone":return function(e,t,r,n){split.polygon(e,t,r.roofZ,n),split.cylinder(e,r.center,r.radius,0,r.roofHeight,r.roofZ,n)}(e,o,a,i);case"dome":return function(e,t,r,n){split.polygon(e,t,r.roofZ,n),split.dome(e,r.center,r.radius,r.roofHeight,r.roofZ,n)}(e,o,a,i);case"pyramid":return function(e,t,r,n,o){"cylinder"===t.shape?split.cylinder(e,n.center,n.radius,0,n.roofHeight,n.roofZ,o):split.pyramid(e,r,n.center,n.roofHeight,n.roofZ,o)}(e,n,o,a,i);case"skillion":return function(e,t,n,o,a,i){if(void 0===t.roofDirection)return r(e,t,n,o,a);var s,l,f=t.roofDirection/180*Math.PI,c=1/0,h=-1/0;n[0].forEach(function(e){var t=e[1]*Math.cos(-f)+e[0]*Math.sin(-f);t<c&&(c=t,s=e),t>h&&(h=t,l=e)});var u=n[0],d=[Math.cos(f),Math.sin(f)],p=[s,[s[0]+d[0],s[1]+d[1]]],g=getDistanceToLine(l,p);n.forEach(function(e){e.forEach(function(e){var t=getDistanceToLine(e,p);e[2]=t/g*o.roofHeight})}),split.polygon(e,[u],o.roofZ,a),n.forEach(function(t){for(var r=0;r<t.length-1;r++)0===t[r][2]&&0===t[r+1][2]||split.quad(e,[t[r][0],t[r][1],o.roofZ+t[r][2]],[t[r][0],t[r][1],o.roofZ],[t[r+1][0],t[r+1][1],o.roofZ],[t[r+1][0],t[r+1][1],o.roofZ+t[r+1][2]],i)})}(e,n,o,a,i,s);case"gabled":case"hipped":case"half-hipped":case"gambrel":case"mansard":return t(e,n,o,0,a,i,s);case"round":return function(e,t,n,o,a,i){if(n.length>1||void 0===t.roofDirection)return r(e,t,n,o,a);return r(e,t,n,o,a)}(e,n,o,a,i);case"onion":return function(e,t,r,n){split.polygon(e,t,r.roofZ,n);for(var o,a,i=[{rScale:.8,hScale:0},{rScale:.9,hScale:.18},{rScale:.9,hScale:.35},{rScale:.8,hScale:.47},{rScale:.6,hScale:.59},{rScale:.5,hScale:.65},{rScale:.2,hScale:.82},{rScale:0,hScale:1}],s=0,l=i.length-1;s<l;s++)o=r.roofHeight*i[s].hScale,a=r.roofHeight*i[s+1].hScale,split.cylinder(e,r.center,r.radius*i[s].rScale,r.radius*i[s+1].rScale,a-o,r.roofZ+o,n)}(e,o,a,i);case"flat":default:return r(e,n,o,a,i)}}}();const split={NUM_Y_SEGMENTS:24,NUM_X_SEGMENTS:32,quad:(e,t,r,n,o,a)=>{split.triangle(e,t,r,n,a),split.triangle(e,n,o,t,a)},triangle:(e,t,r,n,o)=>{const a=vec3.normal(t,r,n);e.vertices.push(...t,...n,...r),e.normals.push(...a,...a,...a),e.colors.push(...o,...o,...o),e.texCoords.push(0,0,0,0,0,0)},circle:(e,t,r,n,o)=>{let a,i;n=n||0;for(let s=0;s<split.NUM_X_SEGMENTS;s++)a=s/split.NUM_X_SEGMENTS,i=(s+1)/split.NUM_X_SEGMENTS,split.triangle(e,[t[0]+r*Math.sin(a*Math.PI*2),t[1]+r*Math.cos(a*Math.PI*2),n],[t[0],t[1],n],[t[0]+r*Math.sin(i*Math.PI*2),t[1]+r*Math.cos(i*Math.PI*2),n],o)},polygon:(e,t,r,n)=>{r=r||0;const o=[],a=[];let i=0;t.forEach((e,n)=>{e.forEach(e=>{o.push(e[0],e[1],r+(e[2]||0))}),n&&(i+=t[n-1].length,a.push(i))});const s=earcut(o,a,3);for(let t=0;t<s.length-2;t+=3){const r=3*s[t],a=3*s[t+1],i=3*s[t+2];split.triangle(e,[o[r],o[r+1],o[r+2]],[o[a],o[a+1],o[a+2]],[o[i],o[i+1],o[i+2]],n)}},cube:(e,t,r,n,o,a,i,s)=>{const l=[o=o||0,a=a||0,i=i||0],f=[o+t,a,i],c=[o+t,a+r,i],h=[o,a+r,i],u=[o,a,i+n],d=[o+t,a,i+n],p=[o+t,a+r,i+n],g=[o,a+r,i+n];split.quad(e,f,l,h,c,s),split.quad(e,u,d,p,g,s),split.quad(e,l,f,d,u,s),split.quad(e,f,c,p,d,s),split.quad(e,c,h,g,p,s),split.quad(e,h,l,u,g,s)},cylinder:(e,t,r,n,o,a,i)=>{a=a||0;const s=split.NUM_X_SEGMENTS,l=2*Math.PI;let f,c,h,u,d,p;for(let g=0;g<s;g++)f=g/s*l,c=(g+1)/s*l,h=Math.sin(f),u=Math.cos(f),d=Math.sin(c),p=Math.cos(c),split.triangle(e,[t[0]+r*h,t[1]+r*u,a],[t[0]+n*d,t[1]+n*p,a+o],[t[0]+r*d,t[1]+r*p,a],i),0!==n&&split.triangle(e,[t[0]+n*h,t[1]+n*u,a+o],[t[0]+n*d,t[1]+n*p,a+o],[t[0]+r*h,t[1]+r*u,a],i)},dome:(e,t,r,n,o,a,i)=>{o=o||0;const s=split.NUM_Y_SEGMENTS/2,l=Math.PI/2,f=i?0:-l;let c,h,u,d,p,g,x,v,m,y;for(let i=0;i<s;i++)c=i/s*l+f,h=(i+1)/s*l+f,u=Math.cos(c),d=Math.sin(c),x=u*r,v=(p=Math.cos(h))*r,m=((g=Math.sin(h))-d)*n,y=o-g*n,split.cylinder(e,t,v,x,m,y,a)},sphere:(e,t,r,n,o,a)=>{o=o||0;let i=0;return i+=split.dome(e,t,r,n/2,o+n/2,a,!0),i+=split.dome(e,t,r,n/2,o+n/2,a)},pyramid:(e,t,r,n,o,a)=>{o=o||0;for(let i=0,s=(t=t[0]).length-1;i<s;i++)split.triangle(e,[t[i][0],t[i][1],o],[t[i+1][0],t[i+1][1],o],[r[0],r[1],o+n],a)},extrusion:(e,t,r,n,o,a)=>{n=n||0;let i,s,l,f,c,h,u,d,p,g,x,v,m=a[2]*r,y=a[3]*r;t.forEach(t=>{for(x=0,v=t.length-1;x<v;x++)i=t[x],s=t[x+1],l=vec2.len(vec2.sub(i,s)),f=[i[0],i[1],n],c=[s[0],s[1],n],h=[s[0],s[1],n+r],u=[i[0],i[1],n+r],d=vec3.normal(f,c,h),[].push.apply(e.vertices,[].concat(f,h,c,f,u,h)),[].push.apply(e.normals,[].concat(d,d,d,d,d,d)),[].push.apply(e.colors,[].concat(o,o,o,o,o,o)),p=a[0]*l<<0,g=a[1]*l<<0,e.texCoords.push(p,y,g,m,g,y,p,y,p,m,g,m)})}},vec3={len:e=>Math.sqrt(e[0]*e[0]+e[1]*e[1]+e[2]*e[2]),sub:(e,t)=>[e[0]-t[0],e[1]-t[1],e[2]-t[2]],unit:e=>{const t=vec3.len(e);return[e[0]/t,e[1]/t,e[2]/t]},normal:(e,t,r)=>{const n=vec3.sub(e,t),o=vec3.sub(t,r);return vec3.unit([n[1]*o[2]-n[2]*o[1],n[2]*o[0]-n[0]*o[2],n[0]*o[1]-n[1]*o[0]])}},vec2={len:e=>Math.sqrt(e[0]*e[0]+e[1]*e[1]),add:(e,t)=>[e[0]+t[0],e[1]+t[1]],sub:(e,t)=>[e[0]-t[0],e[1]-t[1]],dot:(e,t)=>e[1]*t[0]-e[0]*t[1],scale:(e,t)=>[e[0]*t,e[1]*t],equals:(e,t)=>e[0]===t[0]&&e[1]===t[1]};function getGeoJSONBounds(e){const t=e.type,r=e.coordinates,n=[1/0,1/0],o=[-1/0,-1/0];return"Polygon"===t&&r.length?(r[0].forEach(e=>{e[0]<n[0]&&(n[0]=e[0]),e[1]<n[1]&&(n[1]=e[1]),e[0]>o[0]&&(o[0]=e[0]),e[1]>o[1]&&(o[1]=e[1])}),{min:n,max:o}):"MultiPolygon"===t?(r.forEach(e=>{e[0]&&e[0].forEach(e=>{e[0]<n[0]&&(n[0]=e[0]),e[1]<n[1]&&(n[1]=e[1]),e[0]>o[0]&&(o[0]=e[0]),e[1]>o[1]&&(o[1]=e[1])})}),{min:n,max:o}):void 0}function getOBJBounds(e){const t=[1/0,1/0],r=[-1/0,-1/0];for(let n=0;n<e.length;n+=3)e[n]<t[0]&&(t[0]=e[0]),e[n+1]<t[1]&&(t[1]=e[n+1]),e[0]>r[0]&&(r[0]=e[0]),e[n+1]>r[1]&&(r[1]=e[n+1]);return t[0]*=METERS_PER_DEGREE_LATITUDE*Math.cos(t[1]/180*Math.PI),t[1]*=METERS_PER_DEGREE_LATITUDE,r[0]*=METERS_PER_DEGREE_LATITUDE*Math.cos(r[1]/180*Math.PI),r[1]*=METERS_PER_DEGREE_LATITUDE,{min:t,max:r}}const METERS_PER_DEGREE_LATITUDE=6378137*Math.PI/180;function getOrigin(e){const t=e.coordinates;switch(e.type){case"Point":return t;case"MultiPoint":case"LineString":return t[0];case"MultiLineString":case"Polygon":return t[0][0];case"MultiPolygon":return t[0][0][0]}}function getPickingColor(e){return[0,(255&++e)/255,(e>>8&255)/255]}function postResult(e,t,r){const n={items:e,position:t,vertices:new Float32Array(r.vertices),normals:new Float32Array(r.normals),colors:new Float32Array(r.colors),texCoords:new Float32Array(r.texCoords),heights:new Float32Array(r.heights),pickingColors:new Float32Array(r.pickingColors)};postMessage(n,[n.vertices.buffer,n.normals.buffer,n.colors.buffer,n.texCoords.buffer,n.heights.buffer,n.pickingColors.buffer])}function loadGeoJSON(e,t={}){"object"==typeof e?(postMessage("load"),processGeoJSON(e,t)):Request.getJSON(e,(e,r)=>{e?postMessage("error"):(postMessage("load"),processGeoJSON(r,t))},t)}function processGeoJSON(e,t){if(!e||!e.features.length)return void postMessage("error");const r={vertices:[],normals:[],colors:[],texCoords:[],heights:[],pickingColors:[]},n=[],o=getOrigin(e.features[0].geometry),a={latitude:o[1],longitude:o[0]};e.features.forEach((e,a)=>{const i=e.properties,s=t.id||e.id,l=getPickingColor(a);let f=r.vertices.length;triangulate(r,e,o),f=(r.vertices.length-f)/3;for(let e=0;e<f;e++)r.heights.push(i.height),r.pickingColors.push(...l);i.bounds=getGeoJSONBounds(e.geometry),i.geometry=e.geometry,n.push({id:s,properties:i,vertexCount:f})}),postResult(n,a,r)}function loadOBJ(e,t={}){Request.getText(e,(r,n)=>{if(r)return void postMessage("error");let o=n.match(/^mtllib\\s+(.*)$/m);o?Request.getText(e.replace(/[^\\/]+$/,"")+o[1],(e,r)=>{e?postMessage("error"):(postMessage("load"),processOBJ(n,r,t))}):(postMessage("load"),processOBJ(n,null,t))},t)}function processOBJ(e,t,r={}){const n={vertices:[],normals:[],colors:[],texCoords:[],heights:[],pickingColors:[]},o=[],a=Qolor.parse(r.color).toArray(),i=r.position;OBJ.parse(e,t,r.flipYZ).forEach((e,t)=>{n.vertices.push(...e.vertices),n.normals.push(...e.normals),n.texCoords.push(...e.texCoords);const i=r.id||e.id,s={},l=(i/2%2?-1:1)*(i%2?.03:.06),f=a||e.color||DEFAULT_COLOR,c=e.vertices.length/3,h=getPickingColor(t);for(let t=0;t<c;t++)n.colors.push(f[0]+l,f[1]+l,f[2]+l),n.heights.push(e.height),n.pickingColors.push(...h);s.height=e.height,s.color=e.color,s.bounds=getOBJBounds(e.vertices),o.push({id:i,properties:s,vertexCount:c})}),postResult(o,i,n)}onmessage=function(e){const t=e.data;"GeoJSON"===t.type&&loadGeoJSON(t.url,t.options),"OBJ"===t.type&&loadOBJ(t.url,t.options)};';
 
 
 class GLX {
@@ -1296,7 +1296,8 @@ class GLX {
     const canvasOptions = {
       antialias: !fastMode,
       depth: true,
-      premultipliedAlpha: false,
+      // premultipliedAlpha: false,
+      alpha: true,
     };
 
     try {
@@ -1325,7 +1326,7 @@ class GLX {
     GL.cullFace(GL.BACK);
     GL.enable(GL.CULL_FACE);
     GL.enable(GL.DEPTH_TEST);
-    GL.clearColor(0.5, 0.5, 0.5, 1);
+    GL.clearColor(0.0, 0.0, 0.0, 0.0);
 
     if (!fastMode) {
       // TODO OSMB4 always activate but use dynamically
@@ -2066,6 +2067,8 @@ GLX.texture.Image = class {
 
     image = this.clamp(image, GL.getParameter(GL.MAX_TEXTURE_SIZE));
 
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
     GL.bindTexture(GL.TEXTURE_2D, this.id);
     GL.texParameteri(
       GL.TEXTURE_2D,
@@ -2714,6 +2717,23 @@ class OSMBuildings {
     return this.dataGrid;
   }
 
+  // TODO: allow more data layers later on
+  /**
+   * Adds a GeoJSON tile layer to the map.
+   * This is for continuous building coverage.
+   * @param {String} [url=https://{s}.data.osmbuildings.org/0.2/{k}/tile/{z}/{x}/{y}.json] url The URL of the GeoJSON tile server
+   * @param {Object} [options]
+   * @param {Number} [options.fixedZoom=15] Tiles are fetched for this zoom level only. Other zoom levels are scaled up/down to this value
+   * @param {Number} [options.minZoom=14.5] Minimum zoom level to show features from this layer. Defaults to and limited by global minZoom.
+   * @param {Number} [options.maxZoom=maxZoom] Maximum zoom level to show features from this layer. Defaults to and limited by global maxZoom.
+   * @return {Object} The added layer object
+   */
+  addGeoJSONWMSTiles(url, options = {}) {
+    options.fixedZoom = options.fixedZoom || 15;
+    this.dataGrid = new WMSTile(url, GeoJSONTile, options, 2);
+    return this.dataGrid;
+  }
+
   /**
    * Adds a 2d base map source. This renders below the buildings.
    * @param {String} url The URL of the map server. This could be from Mapbox or other tile servers
@@ -2730,7 +2750,36 @@ class OSMBuildings {
    * @return {Object} The added layer object
    */
   addGridLayer(url, options) {
+    const grid = new Grid(url, BitmapTile, options, 4);
     this.gridLayers.push(new Grid(url, BitmapTile, options, 4));
+
+    return grid;
+  }
+
+  /**
+   * removes a 2d base map source.
+   * @param {Grid} grid The Grid object returned from addGridLayer
+   * @return {void} void
+   */
+  removeGridLayer(grid) {
+    const index = this.gridLayers.find(
+      (current) => current.source === grid.source
+    );
+    const [removedGrid] = this.gridLayers.splice(index, 1);
+    removedGrid.destroy();
+
+    return;
+  }
+
+  /**
+   * removes all  2d  maps source.
+   * @return {void} void
+   */
+  removeAllGridLayers() {
+    this.gridLayers.forEach((grid) => grid.destroy());
+    this.gridLayers.length = 0;
+
+    return;
   }
 
   /**
@@ -2831,7 +2880,14 @@ class OSMBuildings {
 
     this.stateDebounce = setTimeout(() => {
       this.stateDebounce = null;
-      const params = [];
+      const converted = new URLSearchParams(window.location.search);
+      converted.delete("lat");
+      converted.delete("lon");
+      converted.delete("zoom");
+      converted.delete("tilt");
+      converted.delete("rotation");
+
+      const params = converted.toString().split("&");
       params.push("lat=" + this.position.latitude.toFixed(6));
       params.push("lon=" + this.position.longitude.toFixed(6));
       params.push("zoom=" + this.zoom.toFixed(1));
@@ -3047,6 +3103,7 @@ class OSMBuildings {
     this.view.destroy();
 
     this.gridLayers.forEach((grid) => grid.destroy());
+    this.gridLayers.length = 0;
     if (this.basemapGrid) this.basemapGrid.destroy();
     // this.dataGrid.destroy();
 
@@ -3058,7 +3115,8 @@ class OSMBuildings {
     this.features.destroy();
     this.markers.destroy();
 
-    this.domNode.innerHTML = "";
+    this.domNode.removeChild(this.container);
+    this.container = undefined;
   }
 
   // destroyWorker () {
@@ -3668,8 +3726,8 @@ class Request {
 
       callback(null, req);
     };
-
-    req.open("GET", url);
+    const method = options ? options.method || "GET" : "GET";
+    req.open(method, url);
     if (options && options.headers) {
       for (let key in options.headers) {
         req.setRequestHeader(key, options.headers[key]);
@@ -3760,6 +3818,368 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(value, min));
 }
 
+class WMSTile {
+  constructor(source, tileClass, options = {}, maxThreads = 2) {
+    this.source = source;
+    this.tileClass = tileClass;
+
+    this.tiles = {};
+    this.buffer = 1;
+
+    this.fixedZoom = options.fixedZoom;
+    this.crs = options.crs;
+
+    this.options = options.headers
+      ? {
+          headers: { ...options.headers },
+          opacity: options.opacity || 1,
+          method: options.method || "GET",
+        }
+      : { opacity: options.opacity || 1, method: options.method || "GET" };
+
+    this.bounds = options.bounds || { w: -180, s: -90, e: 180, n: 90 };
+    this.minZoom = Math.max(
+      parseFloat(options.minZoom || APP.minZoom),
+      APP.minZoom
+    );
+    this.maxZoom = Math.min(
+      parseFloat(options.maxZoom || APP.maxZoom),
+      APP.maxZoom
+    );
+
+    if (this.maxZoom < this.minZoom) {
+      this.minZoom = APP.minZoom;
+      this.maxZoom = APP.maxZoom;
+    }
+
+    this.queue = [];
+    // TODO: should be more flexible, also connected to # of webworkers, could increase when idle
+    for (let i = 0; i < maxThreads; i++) {
+      this.queueNext();
+    }
+
+    this.update();
+  }
+
+  getURL(x, y, z) {
+    const s = "abcd"[(x + y) % 4];
+    const [plainUrl, unparsedQueryParams] = this.source.split("?");
+    const urlQueryParms = new URLSearchParams(unparsedQueryParams);
+    const bboxCoords = [
+      tile2lon(x, z),
+      tile2lat(y, z),
+      tile2lon(x, z) + 0.1,
+      tile2lat(y, z) + 0.1,
+    ];
+
+    urlQueryParms.set("bbox", bboxCoords.join(","));
+    urlQueryParms.delete("width");
+    urlQueryParms.delete("height");
+    urlQueryParms.delete("WIDTH");
+    urlQueryParms.delete("HEIGHT");
+    urlQueryParms.set("width", `256`);
+    urlQueryParms.set("height", `256`);
+
+    return `${pattern(plainUrl, {
+      s: s,
+      x: x,
+      y: y,
+      z: z,
+    })}?${urlQueryParms.toString()}`;
+  }
+
+  getClosestTiles(tileList, referencePoint) {
+    return tileList;
+
+    // tileList.sort((a, b) => {
+    //   // tile coordinates correspond to the tile's upper left corner, but for
+    //   // the distance computation we should rather use their center; hence the 0.5 offsets
+    //   const distA = Math.pow(a[0] + 0.5 - referencePoint[0], 2.0) + Math.pow(a[1] + 0.5 - referencePoint[1], 2.0);
+    //   const distB = Math.pow(b[0] + 0.5 - referencePoint[0], 2.0) + Math.pow(b[1] + 0.5 - referencePoint[1], 2.0);
+    //   return distA > distB;
+    // });
+    //
+    // // remove duplicates
+    // let prevX, prevY;
+    // return tileList.filter(tile => {
+    //   if (tile[0] === prevX && tile[1] === prevY) {
+    //     return false;
+    //   }
+    //   prevX = tile[0];
+    //   prevY = tile[1];
+    //   return true;
+    // });
+  }
+
+  /* Returns a set of tiles based on 'tiles' (at zoom level 'zoom'),
+   * but with those tiles recursively replaced by their respective parent tile
+   * (tile from zoom level 'zoom'-1 that contains 'tile') for which said parent
+   * tile covers less than 'pixelAreaThreshold' pixels on screen based on the
+   * current view-projection matrix.
+   *
+   * The returned tile set is duplicate-free even if there were duplicates in
+   * 'tiles' and even if multiple tiles from 'tiles' got replaced by the same parent.
+   */
+  mergeTiles(tiles, zoom, pixelAreaThreshold) {
+    const parentTiles = {},
+      tileSet = {},
+      tileList = [];
+
+    // if there is no parent zoom level
+    let key;
+    if (zoom === 0 || zoom <= this.minZoom) {
+      for (key in tiles) {
+        tiles[key][2] = zoom;
+      }
+      return tiles;
+    }
+
+    for (key in tiles) {
+      const tile = tiles[key];
+
+      const parentX = (tile[0] << 0) / 2;
+      const parentY = (tile[1] << 0) / 2;
+
+      if (parentTiles[[parentX, parentY]] === undefined) {
+        //parent tile screen size unknown
+        const numParentScreenPixels = getTileSizeOnScreen(
+          parentX,
+          parentY,
+          zoom - 1,
+          APP.view.viewProjMatrix
+        );
+        parentTiles[[parentX, parentY]] =
+          numParentScreenPixels < pixelAreaThreshold;
+      }
+
+      if (!parentTiles[[parentX, parentY]]) {
+        //won't be replaced by a parent tile -->keep
+        if (tileSet[[tile[0], tile[1]]] === undefined) {
+          //remove duplicates
+          tileSet[[tile[0], tile[1]]] = true;
+          tileList.push([tile[0], tile[1], zoom]);
+        }
+      }
+    }
+
+    let parentTileList = [];
+
+    for (key in parentTiles) {
+      if (parentTiles[key]) {
+        const parentTile = key.split(",");
+        parentTileList.push([
+          parseInt(parentTile[0]),
+          parseInt(parentTile[1]),
+          zoom - 1,
+        ]);
+      }
+    }
+
+    if (parentTileList.length > 0) {
+      parentTileList = this.mergeTiles(
+        parentTileList,
+        zoom - 1,
+        pixelAreaThreshold
+      );
+    }
+
+    return tileList.concat(parentTileList);
+  }
+
+  getDistance(a, b) {
+    const dx = a[0] - b[0],
+      dy = a[1] - b[1];
+    return dx * dx + dy * dy;
+  }
+
+  // getAnglePoint (point, angle, distance) {
+  //   let rad = angle * Math.PI / 180;
+  //   return [distance * Math.cos(rad) + point[0], distance * Math.sin(rad) + point[1]];
+  // }
+  //
+  // // inspired by polygon.js (https://github.com/tmpvar/polygon.js/blob/master/polygon.js
+  // pointInPolygon (point, polygon) {
+  //   let
+  //     res = false,
+  //     curr, prev;
+  //   for (let i = 1; i < polygon.length; i++) {
+  //     curr = polygon[i];
+  //     prev = polygon[i - 1];
+  //
+  //     ((prev[1] <= point[1] && point[1] < curr[1]) || (curr[1] <= point[1] && point[1] < prev[1]))
+  //     && (point[0] < (curr[0] - prev[0]) * (point[1] - prev[1]) / (curr[1] - prev[1]) + prev[0])
+  //     && (res = !res);
+  //   }
+  //   return res;
+  // }
+
+  update() {
+    if (APP.zoom < this.minZoom || APP.zoom > this.maxZoom) {
+      return;
+    }
+
+    const zoom = Math.round(this.fixedZoom || APP.zoom);
+    // TODO: respect bounds
+    // min = project(this.bounds.s, this.bounds.w, 1<<zoom),
+    // max = project(this.bounds.n, this.bounds.e, 1<<zoom),
+    // bounds = {
+    //   zoom: zoom,
+    //   minX: min.x <<0,
+    //   minY: min.y <<0,
+    //   maxX: max.x <<0,
+    //   maxY: max.y <<0
+    // };
+
+    const latlng = [APP.position.longitude, APP.position.latitude];
+    let viewQuad = APP.view.getViewQuad(APP.view.viewProjMatrix.data),
+      center = project(latlng, 1 << zoom);
+
+    for (let i = 0; i < 4; i++) {
+      viewQuad[i] = getTilePositionFromLocal(viewQuad[i], zoom);
+    }
+    let tiles = rasterConvexQuad(viewQuad);
+
+    tiles = this.fixedZoom
+      ? this.getClosestTiles(tiles, center)
+      : this.mergeTiles(tiles, zoom, 0.5 * TILE_SIZE * TILE_SIZE);
+
+    const visibleTiles = {};
+    tiles.forEach((pos) => {
+      if (pos[2] === undefined) {
+        pos[2] = zoom;
+      }
+      visibleTiles[pos.join(",")] = true;
+    });
+
+    this.visibleTiles = visibleTiles; // TODO: remove from this. Currently needed for basemap renderer collecting items
+
+    //*****************************************************
+    //*****************************************************
+
+    for (let key in visibleTiles) {
+      const pos = key.split(","),
+        x = parseInt(pos[0]),
+        y = parseInt(pos[1]),
+        zoom = parseInt(pos[2]);
+
+      // TODO: check why some other zoom levels are loaded!
+
+      if (this.tiles[key]) {
+        continue;
+      }
+      // create tile if it doesn't exist
+      this.tiles[key] = new this.tileClass(x, y, zoom, this.options);
+      this.queue.push(this.tiles[key]);
+    }
+
+    this.purge(visibleTiles);
+
+    // update all distances
+    this.queue.forEach((tile) => {
+      tile.distance = this.getDistance([tile.x, tile.y], center);
+    });
+
+    this.queue.sort((a, b) => {
+      return b.distance - a.distance;
+    });
+
+    this.updateTimer = setTimeout(() => {
+      this.update();
+    }, 100);
+  }
+
+  coord3857To4326(coord) {
+    const e_value = 2.7182818284;
+    const X = 20037508.34;
+
+    const lat3857 = coord.lat;
+    const long3857 = coord.lng;
+
+    //converting the longitute from epsg 3857 to 4326
+    const long4326 = (long3857 * 180) / X;
+
+    //converting the latitude from epsg 3857 to 4326 split in multiple lines for readability
+    let lat4326 = lat3857 / (X / 180);
+    const exponent = (Math.PI / 180) * lat4326;
+
+    lat4326 = Math.atan(Math.pow(e_value, exponent));
+    lat4326 = lat4326 / (Math.PI / 360); // Here is the fixed line
+    lat4326 = lat4326 - 90;
+
+    return { lat: lat4326, lng: long4326 };
+  }
+
+  queueNext() {
+    if (!this.queue.length) {
+      this.queueTimer = setTimeout(this.queueNext.bind(this), 200);
+      return;
+    }
+
+    const tile = this.queue.pop();
+
+    tile.load(this.getURL(tile.x, tile.y, tile.zoom), () => {
+      this.queueNext();
+    });
+  }
+
+  purge(visibleTiles) {
+    const zoom = Math.round(APP.zoom);
+
+    for (let key in this.tiles) {
+      let tile = this.tiles[key];
+
+      // tile is visible: keep
+      if (visibleTiles[key]) {
+        continue;
+      }
+
+      // tile is not visible and due to fixedZoom there are no alternate zoom levels: drop
+      if (this.fixedZoom) {
+        this.tiles[key].destroy();
+        delete this.tiles[key];
+        continue;
+      }
+
+      // tile's parent would be visible: keep
+      if (tile.zoom === zoom + 1) {
+        let parentKey = [(tile.x / 2) << 0, (tile.y / 2) << 0, zoom].join(",");
+        if (visibleTiles[parentKey]) {
+          continue;
+        }
+      }
+
+      // any of tile's children would be visible: keep
+      if (tile.zoom === zoom - 1) {
+        if (
+          visibleTiles[[tile.x * 2, tile.y * 2, zoom].join(",")] ||
+          visibleTiles[[tile.x * 2 + 1, tile.y * 2, zoom].join(",")] ||
+          visibleTiles[[tile.x * 2, tile.y * 2 + 1, zoom].join(",")] ||
+          visibleTiles[[tile.x * 2 + 1, tile.y * 2 + 1, zoom].join(",")]
+        ) {
+          continue;
+        }
+      }
+
+      // drop anything else
+      delete this.tiles[key];
+    }
+
+    // remove dead tiles from queue
+    this.queue = this.queue.filter((tile) => !!tile);
+  }
+
+  destroy() {
+    for (let key in this.tiles) {
+      this.tiles[key].destroy();
+    }
+    this.tiles = {};
+    this.queue = [];
+
+    clearTimeout(this.updateTimer);
+    clearTimeout(this.queueTimer);
+  }
+}
+
 class Grid {
   constructor(source, tileClass, options = {}, maxThreads = 2) {
     this.source = source;
@@ -3769,9 +4189,14 @@ class Grid {
     this.buffer = 1;
 
     this.fixedZoom = options.fixedZoom;
+    this.crs = options.crs;
     this.options = options.headers
-      ? { headers: { ...options.headers } }
-      : undefined;
+      ? {
+          headers: { ...options.headers },
+          opacity: options.opacity || 1,
+          method: options.method || "GET",
+        }
+      : { opacity: options.opacity || 1, method: options.method || "GET" };
 
     this.bounds = options.bounds || { w: -180, s: -90, e: 180, n: 90 };
     this.minZoom = Math.max(
@@ -3944,17 +4369,15 @@ class Grid {
     //   maxY: max.y <<0
     // };
 
+    const latlng = [APP.position.longitude, APP.position.latitude];
     let viewQuad = APP.view.getViewQuad(APP.view.viewProjMatrix.data),
-      center = project(
-        [APP.position.longitude, APP.position.latitude],
-        1 << zoom
-      );
+      center = project(latlng, 1 << zoom);
 
     for (let i = 0; i < 4; i++) {
       viewQuad[i] = getTilePositionFromLocal(viewQuad[i], zoom);
     }
-
     let tiles = rasterConvexQuad(viewQuad);
+
     tiles = this.fixedZoom
       ? this.getClosestTiles(tiles, center)
       : this.mergeTiles(tiles, zoom, 0.5 * TILE_SIZE * TILE_SIZE);
@@ -4002,6 +4425,27 @@ class Grid {
     this.updateTimer = setTimeout(() => {
       this.update();
     }, 100);
+  }
+
+  coord3857To4326(coord) {
+    const e_value = 2.7182818284;
+    const X = 20037508.34;
+
+    const lat3857 = coord.lat;
+    const long3857 = coord.lng;
+
+    //converting the longitute from epsg 3857 to 4326
+    const long4326 = (long3857 * 180) / X;
+
+    //converting the latitude from epsg 3857 to 4326 split in multiple lines for readability
+    let lat4326 = lat3857 / (X / 180);
+    const exponent = (Math.PI / 180) * lat4326;
+
+    lat4326 = Math.atan(Math.pow(e_value, exponent));
+    lat4326 = lat4326 / (Math.PI / 360); // Here is the fixed line
+    lat4326 = lat4326 - 90;
+
+    return { lat: lat4326, lng: long4326 };
   }
 
   queueNext() {
@@ -4160,19 +4604,17 @@ class BitmapTile extends Tile {
   }
 }
 
-
 class GeoJSONTile extends Tile {
-
   constructor(x, y, zoom, options) {
     super(x, y, zoom);
     this.options = options;
   }
 
-  load (url, callback) {
-    this.content = new Feature('GeoJSON', url, this.options, callback);
+  load(url, callback) {
+    this.content = new Feature("GeoJSON", url, this.options, callback);
   }
 
-  destroy () {
+  destroy() {
     if (this.content) {
       this.content.destroy();
     }
@@ -4205,10 +4647,8 @@ class FeatureCollection extends Collection {
   }
 }
 
-
 class Feature {
-
-  constructor (type, url, options = {}, callback = function () {}) {
+  constructor(type, url, options = {}, callback = function () {}) {
     this.type = type;
     this.options = options;
     this.callback = callback;
@@ -4220,8 +4660,14 @@ class Feature {
     this.scale(options.scale || 1);
     this.rotate(options.rotation || 0);
 
-    this.minZoom = Math.max(parseFloat(options.minZoom || MIN_ZOOM), APP.minZoom);
-    this.maxZoom = Math.min(parseFloat(options.maxZoom || MAX_ZOOM), APP.maxZoom);
+    this.minZoom = Math.max(
+      parseFloat(options.minZoom || MIN_ZOOM),
+      APP.minZoom
+    );
+    this.maxZoom = Math.min(
+      parseFloat(options.maxZoom || MAX_ZOOM),
+      APP.maxZoom
+    );
 
     if (this.maxZoom < this.minZoom) {
       this.minZoom = MIN_ZOOM;
@@ -4231,17 +4677,17 @@ class Feature {
     this.load(url);
   }
 
-  load (url) {
+  load(url) {
     // TODO: perhaps have some workers attached to collection and just ask for them
-    APP.workers.get(worker => {
-      worker.onMessage(res => {
-        if (res === 'error') {
+    APP.workers.get((worker) => {
+      worker.onMessage((res) => {
+        if (res === "error") {
           this.callback();
           worker.free();
           return;
         }
 
-        if (res === 'load') {
+        if (res === "load") {
           this.callback();
           return;
         }
@@ -4249,15 +4695,15 @@ class Feature {
         this.onLoad(res);
         worker.free();
       });
-
       worker.postMessage({ type: this.type, url: url, options: this.options });
     });
   }
 
-  onLoad (res) {
+  onLoad(res) {
     this.longitude = res.position.longitude;
     this.latitude = res.position.latitude;
-    this.metersPerLon = METERS_PER_DEGREE_LATITUDE * Math.cos(this.latitude / 180 * Math.PI);
+    this.metersPerLon =
+      METERS_PER_DEGREE_LATITUDE * Math.cos((this.latitude / 180) * Math.PI);
 
     //****** init buffers *********************************
 
@@ -4287,28 +4733,28 @@ class Feature {
     }, 20);
   }
 
-  translateBy (x = 0, y = 0, z = 0) {
+  translateBy(x = 0, y = 0, z = 0) {
     this.matrix.translateBy(x, y, z);
   }
 
-  scale (scaling) {
+  scale(scaling) {
     this.matrix.scale(scaling, scaling, scaling);
   }
 
-  rotate (angle) {
+  rotate(angle) {
     this.matrix.rotateZ(-angle);
   }
 
-  getMatrix () {
+  getMatrix() {
     this.matrix.translateTo(
       (this.longitude - APP.position.longitude) * this.metersPerLon,
-      (APP.position.latitude-this.latitude) * METERS_PER_DEGREE_LATITUDE,
+      (APP.position.latitude - this.latitude) * METERS_PER_DEGREE_LATITUDE,
       this.altitude
     );
     return this.matrix;
   }
 
-  getFade () {
+  getFade() {
     if (this.fade >= 1) {
       return 1;
     }
@@ -4321,16 +4767,18 @@ class Feature {
     return fade;
   }
 
-  applyTintAndZScale () {
+  applyTintAndZScale() {
     const tintColors = [];
     const tintCallback = APP.features.tintCallback;
     const zScales = [];
     const zScaleCallback = APP.features.zScaleCallback;
 
-    this.items.forEach(item => {
+    this.items.forEach((item) => {
       const f = { id: item.id, properties: item.properties }; // perhaps pass center/bbox as well
       const tintColor = tintCallback(f);
-      const col = tintColor ? [...Qolor.parse(tintColor).toArray(), 1] : [0, 0, 0, 0];
+      const col = tintColor
+        ? [...Qolor.parse(tintColor).toArray(), 1]
+        : [0, 0, 0, 0];
       const hideFlag = zScaleCallback(f);
       for (let i = 0; i < item.vertexCount; i++) {
         tintColors.push(...col);
@@ -4343,7 +4791,7 @@ class Feature {
     this.zScaleBuffer = new GLX.Buffer(1, new Float32Array(zScales));
   }
 
-  destroy () {
+  destroy() {
     APP.features.remove(this);
 
     // if (this.request) {
@@ -4453,7 +4901,6 @@ class MapPlane {
   }
 }
 
-
 function assert(condition, message) {
   if (!condition) {
     throw message;
@@ -4463,7 +4910,7 @@ function assert(condition, message) {
 /* Returns the distance of point 'p' from line 'line1'->'line2'.
  * based on http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
  */
- /*
+/*
 function getDistancePointLine2( line1, line2, p) {
 
   //v: a unit-length vector perpendicular to the line;
@@ -4473,42 +4920,47 @@ function getDistancePointLine2( line1, line2, p) {
 } */
 
 /*  given a pixel's (integer) position through which the line 'segmentStart' ->
- *  'segmentEnd' passes, this method returns the one neighboring pixel of 
- *  'currentPixel' that would be traversed next if the line is followed in 
+ *  'segmentEnd' passes, this method returns the one neighboring pixel of
+ *  'currentPixel' that would be traversed next if the line is followed in
  *  the direction from 'segmentStart' to 'segmentEnd' (even if the next point
  *  would lie beyond 'segmentEnd'. )
  */
 function getNextPixel(segmentStart, segmentEnd, currentPixel) {
-  const vInc = [segmentStart[0] < segmentEnd[0] ? 1 : -1,
-              segmentStart[1] < segmentEnd[1] ? 1 : -1];
-         
-  const nextX = currentPixel[0] + (segmentStart[0] < segmentEnd[0] ?  +1 : 0);
-  const nextY = currentPixel[1] + (segmentStart[1] < segmentEnd[1] ?  +1 : 0);
-  
+  const vInc = [
+    segmentStart[0] < segmentEnd[0] ? 1 : -1,
+    segmentStart[1] < segmentEnd[1] ? 1 : -1,
+  ];
+
+  const nextX = currentPixel[0] + (segmentStart[0] < segmentEnd[0] ? +1 : 0);
+  const nextY = currentPixel[1] + (segmentStart[1] < segmentEnd[1] ? +1 : 0);
+
   // position of the edge to the next pixel on the line 'segmentStart'->'segmentEnd'
-  const alphaX = (nextX - segmentStart[0])/ (segmentEnd[0] - segmentStart[0]);
-  const alphaY = (nextY - segmentStart[1])/ (segmentEnd[1] - segmentStart[1]);
-  
+  const alphaX = (nextX - segmentStart[0]) / (segmentEnd[0] - segmentStart[0]);
+  const alphaY = (nextY - segmentStart[1]) / (segmentEnd[1] - segmentStart[1]);
+
   // neither value is valid
   if ((alphaX <= 0.0 || alphaX > 1.0) && (alphaY <= 0.0 || alphaY > 1.0)) {
     return [undefined, undefined];
   }
-    
-  if (alphaX <= 0.0 || alphaX > 1.0) { // only alphaY is valid
+
+  if (alphaX <= 0.0 || alphaX > 1.0) {
+    // only alphaY is valid
     return [currentPixel[0], currentPixel[1] + vInc[1]];
   }
 
-  if (alphaY <= 0.0 || alphaY > 1.0) { // only alphaX is valid
+  if (alphaY <= 0.0 || alphaY > 1.0) {
+    // only alphaX is valid
     return [currentPixel[0] + vInc[0], currentPixel[1]];
   }
-    
-  return alphaX < alphaY ? [currentPixel[0]+vInc[0], currentPixel[1]] :
-                           [currentPixel[0],         currentPixel[1] + vInc[1]];
+
+  return alphaX < alphaY
+    ? [currentPixel[0] + vInc[0], currentPixel[1]]
+    : [currentPixel[0], currentPixel[1] + vInc[1]];
 }
 
 /* returns all pixels that are at least partially covered by the triangle
- * p1-p2-p3. 
- * Note: the returned array of pixels *will* contain duplicates that may need 
+ * p1-p2-p3.
+ * Note: the returned array of pixels *will* contain duplicates that may need
  * to be removed.
  */
 function rasterTriangle(p1, p2, p3) {
@@ -4519,17 +4971,15 @@ function rasterTriangle(p1, p2, p3) {
   p1 = points[0];
   p2 = points[1];
   p3 = points[2];
-  
-  if (p1[1] == p2[1])
-    return rasterFlatTriangle( p1, p2, p3);
-    
-  if (p2[1] == p3[1])
-    return rasterFlatTriangle( p2, p3, p1);
+
+  if (p1[1] == p2[1]) return rasterFlatTriangle(p1, p2, p3);
+
+  if (p2[1] == p3[1]) return rasterFlatTriangle(p2, p3, p1);
 
   const alpha = (p2[1] - p1[1]) / (p3[1] - p1[1]);
   //point on the line p1->p3 with the same y-value as p2
-  const p4 = [p1[0] + alpha*(p3[0]-p1[0]), p2[1]];
-  
+  const p4 = [p1[0] + alpha * (p3[0] - p1[0]), p2[1]];
+
   /*  P3
    *   |\
    *   | \
@@ -4552,52 +5002,51 @@ function rasterTriangle(p1, p2, p3) {
  *  | \_
  *  |   \_
  *  |     \_
- * f0/f1--f1/f0  
+ * f0/f1--f1/f0
  */
-function rasterFlatTriangle( flat0, flat1, other ) {
-
+function rasterFlatTriangle(flat0, flat1, other) {
   //console.log("RFT:\n%s\n%s\n%s", String(flat0), String(flat1), String(other));
   const points = [];
-  assert(flat0[1] === flat1[1], 'not a flat triangle');
-  assert(other[1] !== flat0[1], 'not a triangle');
-  assert(flat0[0] !== flat1[0], 'not a triangle');
+  assert(flat0[1] === flat1[1], "not a flat triangle");
+  assert(other[1] !== flat0[1], "not a triangle");
+  assert(flat0[0] !== flat1[0], "not a triangle");
 
-  if (flat0[0] > flat1[0]) //guarantees that flat0 is always left of flat1
-  {
+  if (flat0[0] > flat1[0]) {
+    //guarantees that flat0 is always left of flat1
     const tmp = flat0;
     flat0 = flat1;
     flat1 = tmp;
   }
 
-  let leftRasterPos = [other[0] <<0, other[1] <<0];
+  let leftRasterPos = [other[0] << 0, other[1] << 0];
   let rightRasterPos = leftRasterPos.slice(0);
   points.push(leftRasterPos.slice(0));
   const yDir = other[1] < flat0[1] ? +1 : -1;
   const yStart = leftRasterPos[1];
-  const yBeyond= (flat0[1] <<0) + yDir;
+  const yBeyond = (flat0[1] << 0) + yDir;
   let prevLeftRasterPos;
   let prevRightRasterPos;
 
-  for (let y = yStart; (y*yDir) < (yBeyond*yDir); y+= yDir) {
+  for (let y = yStart; y * yDir < yBeyond * yDir; y += yDir) {
     do {
-      points.push( leftRasterPos.slice(0));
+      points.push(leftRasterPos.slice(0));
       prevLeftRasterPos = leftRasterPos;
       leftRasterPos = getNextPixel(other, flat0, leftRasterPos);
-    } while (leftRasterPos[1]*yDir <= y*yDir);
+    } while (leftRasterPos[1] * yDir <= y * yDir);
     leftRasterPos = prevLeftRasterPos;
-    
+
     do {
-      points.push( rightRasterPos.slice(0));
+      points.push(rightRasterPos.slice(0));
       prevRightRasterPos = rightRasterPos;
       rightRasterPos = getNextPixel(other, flat1, rightRasterPos);
-    } while (rightRasterPos[1]*yDir <= y*yDir);
+    } while (rightRasterPos[1] * yDir <= y * yDir);
     rightRasterPos = prevRightRasterPos;
-    
+
     for (let x = leftRasterPos[0]; x <= rightRasterPos[0]; x++) {
       points.push([x, y]);
     }
   }
-  
+
   return points;
 }
 
@@ -4606,7 +5055,11 @@ function rasterFlatTriangle( flat0, flat1, other ) {
  * then the return value of this method is undefined.
  */
 function rasterConvexQuad(quad) {
-  assert(quad.length == 4, 'Error: Quadrilateral with more or less than four vertices');
+  assert(
+    quad.length == 4,
+    "Error: Quadrilateral with more or less than four vertices"
+  );
+
   const res1 = rasterTriangle(quad[0], quad[1], quad[2]);
   const res2 = rasterTriangle(quad[0], quad[2], quad[3]);
   return res1.concat(res2);
@@ -4617,19 +5070,19 @@ function normal(a, b, c) {
   const d1 = sub3(a, b);
   const d2 = sub3(b, c);
   // normalized cross product of d1 and d2.
-  return norm3([ d1[1]*d2[2] - d1[2]*d2[1],
-                 d1[2]*d2[0] - d1[0]*d2[2],
-                 d1[0]*d2[1] - d1[1]*d2[0] ]);
+  return norm3([
+    d1[1] * d2[2] - d1[2] * d2[1],
+    d1[2] * d2[0] - d1[0] * d2[2],
+    d1[0] * d2[1] - d1[1] * d2[0],
+  ]);
 }
-
-
 
 /**
  * returns the quadrilateral part of the XY plane that is currently visible on
  * screen. The quad is returned in tile coordinates for tile zoom level
  * 'tileZoomLevel', and thus can directly be used to determine which basemap
  * and geometry tiles need to be loaded.
- * Note: if the horizon is level (as should usually be the case for 
+ * Note: if the horizon is level (as should usually be the case for
  * OSMBuildings) then said quad is also a trapezoid.
  */
 function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
@@ -4637,11 +5090,10 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
 
   const inverseViewMatrix = GLX.Matrix.invert(viewProjectionMatrix);
 
-  let
-    vBottomLeft  = getIntersectionWithXYPlane(-1, -1, inverseViewMatrix),
-    vBottomRight = getIntersectionWithXYPlane( 1, -1, inverseViewMatrix),
-    vTopRight    = getIntersectionWithXYPlane( 1,  1, inverseViewMatrix),
-    vTopLeft     = getIntersectionWithXYPlane(-1,  1, inverseViewMatrix);
+  let vBottomLeft = getIntersectionWithXYPlane(-1, -1, inverseViewMatrix),
+    vBottomRight = getIntersectionWithXYPlane(1, -1, inverseViewMatrix),
+    vTopRight = getIntersectionWithXYPlane(1, 1, inverseViewMatrix),
+    vTopLeft = getIntersectionWithXYPlane(-1, 1, inverseViewMatrix);
 
   // If even the lower edge of the screen does not intersect with the map plane,
   // then the map plane is not visible at all. We won't attempt to create a view rectangle.
@@ -4650,9 +5102,7 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
     return;
   }
 
-  let
-    vLeftDir, vRightDir, vLeftPoint, vRightPoint,
-    f;
+  let vLeftDir, vRightDir, vLeftPoint, vRightPoint, f;
 
   // The lower screen edge intersects map plane, but the upper one does not.
   // Usually happens when the camera is close to parallel to the ground
@@ -4666,51 +5116,62 @@ function getViewQuad(viewProjectionMatrix, maxFarEdgeDistance, viewDirOnMap) {
     vLeftPoint = getIntersectionWithXYPlane(-1, -0.9, inverseViewMatrix);
     vLeftDir = norm2(sub2(vLeftPoint, vBottomLeft));
     f = dot2(vLeftDir, viewDirOnMap);
-    vTopLeft = add2( vBottomLeft, mul2scalar(vLeftDir, maxFarEdgeDistance/f));
-    
-    vRightPoint = getIntersectionWithXYPlane( 1, -0.9, inverseViewMatrix);
+    vTopLeft = add2(vBottomLeft, mul2scalar(vLeftDir, maxFarEdgeDistance / f));
+
+    vRightPoint = getIntersectionWithXYPlane(1, -0.9, inverseViewMatrix);
     vRightDir = norm2(sub2(vRightPoint, vBottomRight));
     f = dot2(vRightDir, viewDirOnMap);
-    vTopRight = add2( vBottomRight, mul2scalar(vRightDir, maxFarEdgeDistance/f));
+    vTopRight = add2(
+      vBottomRight,
+      mul2scalar(vRightDir, maxFarEdgeDistance / f)
+    );
   }
 
   // If vTopLeft is further than maxFarEdgeDistance away vertically from the lower edge, move it closer.
   if (dot2(viewDirOnMap, sub2(vTopLeft, vBottomLeft)) > maxFarEdgeDistance) {
     vLeftDir = norm2(sub2(vTopLeft, vBottomLeft));
     f = dot2(vLeftDir, viewDirOnMap);
-    vTopLeft = add2(vBottomLeft, mul2scalar(vLeftDir, maxFarEdgeDistance/f));
+    vTopLeft = add2(vBottomLeft, mul2scalar(vLeftDir, maxFarEdgeDistance / f));
   }
 
   // Same for vTopRight
   if (dot2(viewDirOnMap, sub2(vTopRight, vBottomRight)) > maxFarEdgeDistance) {
     vRightDir = norm2(sub2(vTopRight, vBottomRight));
     f = dot2(vRightDir, viewDirOnMap);
-    vTopRight = add2(vBottomRight, mul2scalar(vRightDir, maxFarEdgeDistance/f));
+    vTopRight = add2(
+      vBottomRight,
+      mul2scalar(vRightDir, maxFarEdgeDistance / f)
+    );
   }
- 
+
   return [vBottomLeft, vBottomRight, vTopRight, vTopLeft];
 }
-
 
 /* Returns an orthographic projection matrix whose view rectangle contains all
  * points of 'points' when watched from the position given by targetViewMatrix.
  * The depth range of the returned matrix is [near, far].
- * The 'points' are given as euclidean coordinates in [m] distance to the 
- * current reference point (APP.position). 
+ * The 'points' are given as euclidean coordinates in [m] distance to the
+ * current reference point (APP.position).
  */
-function getCoveringOrthoProjection(points, targetViewMatrix, near, far, height) {
+function getCoveringOrthoProjection(
+  points,
+  targetViewMatrix,
+  near,
+  far,
+  height
+) {
   const p = transformVec3(targetViewMatrix.data, points[0]);
-  let left   = p[0];
-  let right  = p[0];
-  let top    = p[1];
+  let left = p[0];
+  let right = p[0];
+  let top = p[1];
   let bottom = p[1];
 
-  points.forEach(point => {
+  points.forEach((point) => {
     const p = transformVec3(targetViewMatrix.data, point);
-    left   = Math.min( left,  p[0]);
-    right  = Math.max( right, p[0]);
-    top    = Math.max( top,   p[1]);
-    bottom = Math.min( bottom,p[1]);
+    left = Math.min(left, p[0]);
+    right = Math.max(right, p[0]);
+    top = Math.max(top, p[1]);
+    bottom = Math.min(bottom, p[1]);
   });
 
   return new GLX.Matrix.Ortho(left, right, top, bottom, near, far);
@@ -4723,11 +5184,11 @@ function getCoveringOrthoProjection(points, targetViewMatrix, near, far, height)
  * vector is then converted back to a 3D Euler coordinates by dividing
  * its first three components each by its fourth component */
 function transformVec3(m, v) {
-  const x = v[0]*m[0] + v[1]*m[4] + v[2]*m[8]  + m[12];
-  const y = v[0]*m[1] + v[1]*m[5] + v[2]*m[9]  + m[13];
-  const z = v[0]*m[2] + v[1]*m[6] + v[2]*m[10] + m[14];
-  const w = v[0]*m[3] + v[1]*m[7] + v[2]*m[11] + m[15];
-  return [x/w, y/w, z/w]; //convert homogenous to Euler coordinates
+  const x = v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + m[12];
+  const y = v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + m[13];
+  const z = v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + m[14];
+  const w = v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + m[15];
+  return [x / w, y / w, z / w]; //convert homogenous to Euler coordinates
 }
 
 /* returns the point (in OSMBuildings' local coordinates) on the XY plane (z==0)
@@ -4743,32 +5204,32 @@ function getIntersectionWithXYPlane(screenNdcX, screenNdcY, inverseTransform) {
   // direction vector from v1 to v2
   const vDir = sub3(v2, v1);
 
-  if (vDir[2] >= 0) // ray would not intersect with the plane
-  {
+  if (vDir[2] >= 0) {
+    // ray would not intersect with the plane
     return;
   }
   /* ray equation for all world-space points 'p' lying on the screen-space NDC position
    * (screenNdcX, screenNdcY) is:  p = v1 + λ*vDirNorm
    * For the intersection with the xy-plane (-> z=0) holds: v1[2] + λ*vDirNorm[2] = p[2] = 0.0.
    * Rearranged, this reads:   */
-  const lambda = -v1[2]/vDir[2];
-  const pos = add3( v1, mul3scalar(vDir, lambda));
+  const lambda = -v1[2] / vDir[2];
+  const pos = add3(v1, mul3scalar(vDir, lambda));
 
-  return [pos[0], pos[1]];  // z==0 
+  return [pos[0], pos[1]]; // z==0
 }
 
-/* Returns: the number of screen pixels that would be covered by the tile 
+/* Returns: the number of screen pixels that would be covered by the tile
  *          tileZoom/tileX/tileY *if* the screen would not end at the viewport
- *          edges. The intended use of this method is to return a measure of 
+ *          edges. The intended use of this method is to return a measure of
  *          how detailed the tile should be rendered.
  * Note: This method does not clip the tile to the viewport. So the number
  *       returned will be larger than the number of screen pixels covered iff.
- *       the tile intersects with a viewport edge. 
+ *       the tile intersects with a viewport edge.
  */
 function getTileSizeOnScreen(tileX, tileY, tileZoom, viewProjMatrix) {
   const tileLon = tile2lon(tileX, tileZoom);
   const tileLat = tile2lat(tileY, tileZoom);
-  
+
   const modelMatrix = new GLX.Matrix();
   modelMatrix.translateBy(
     (tileLon - APP.position.longitude) * METERS_PER_DEGREE_LONGITUDE,
@@ -4776,89 +5237,151 @@ function getTileSizeOnScreen(tileX, tileY, tileZoom, viewProjMatrix) {
     0
   );
 
-  const size = getTileSizeInMeters( APP.position.latitude, tileZoom);
-  
+  const size = getTileSizeInMeters(APP.position.latitude, tileZoom);
+
   const mvpMatrix = GLX.Matrix.multiply(modelMatrix, viewProjMatrix);
-  const tl = transformVec3(mvpMatrix, [0   , 0   , 0]);
-  const tr = transformVec3(mvpMatrix, [size, 0   , 0]);
-  const bl = transformVec3(mvpMatrix, [0   , size, 0]);
+  const tl = transformVec3(mvpMatrix, [0, 0, 0]);
+  const tr = transformVec3(mvpMatrix, [size, 0, 0]);
+  const bl = transformVec3(mvpMatrix, [0, size, 0]);
   const br = transformVec3(mvpMatrix, [size, size, 0]);
-  const res = [tl, tr, bl, br].map(vert => {
+  const res = [tl, tr, bl, br].map((vert) => {
     // transformation from NDC [-1..1] to viewport [0.. width/height] coordinates
-    vert[0] = (vert[0] + 1.0) / 2.0 * APP.width;
-    vert[1] = (vert[1] + 1.0) / 2.0 * APP.height;
+    vert[0] = ((vert[0] + 1.0) / 2.0) * APP.width;
+    vert[1] = ((vert[1] + 1.0) / 2.0) * APP.height;
     return vert;
   });
-  
+
   return getConvexQuadArea(res);
 }
 
 function getTriangleArea(p1, p2, p3) {
   //triangle edge lengths
-  const a = len2(sub2( p1, p2));
-  const b = len2(sub2( p1, p3));
-  const c = len2(sub2( p2, p3));
-  
+  const a = len2(sub2(p1, p2));
+  const b = len2(sub2(p1, p3));
+  const c = len2(sub2(p2, p3));
+
   //Heron's formula
-  const s = 0.5 * (a+b+c);
-  return Math.sqrt( s * (s-a) * (s-b) * (s-c));
+  const s = 0.5 * (a + b + c);
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
 }
 
 function getConvexQuadArea(quad) {
-  return getTriangleArea( quad[0], quad[1], quad[2]) + 
-         getTriangleArea( quad[0], quad[2], quad[3]);
+  return (
+    getTriangleArea(quad[0], quad[1], quad[2]) +
+    getTriangleArea(quad[0], quad[2], quad[3])
+  );
 }
 
-function getTileSizeInMeters( latitude, zoom) {
-  return EARTH_CIRCUMFERENCE_IN_METERS * Math.cos(latitude / 180 * Math.PI) / 
-         Math.pow(2, zoom);
+function getTileSizeInMeters(latitude, zoom) {
+  return (
+    (EARTH_CIRCUMFERENCE_IN_METERS * Math.cos((latitude / 180) * Math.PI)) /
+    Math.pow(2, zoom)
+  );
 }
 
 function getPositionFromLocal(localXY) {
   return {
-    longitude: APP.position.longitude + localXY[0] / METERS_PER_DEGREE_LONGITUDE,
-    latitude: APP.position.latitude - localXY[1] / METERS_PER_DEGREE_LATITUDE
+    longitude:
+      APP.position.longitude + localXY[0] / METERS_PER_DEGREE_LONGITUDE,
+    latitude: APP.position.latitude - localXY[1] / METERS_PER_DEGREE_LATITUDE,
   };
 }
 
 function getTilePositionFromLocal(localXY, zoom) {
   const pos = getPositionFromLocal(localXY);
-  return project([pos.longitude,  pos.latitude], 1<<zoom);
+  return project([pos.longitude, pos.latitude], 1 << zoom);
 }
 
 function project(point, scale = 1) {
   return [
-    (point[0]/360 + 0.5) * scale,
-    (1-Math.log(Math.tan(point[1] * Math.PI / 180) + 1 / Math.cos(point[1] * Math.PI/180)) / Math.PI)/2 * scale
+    (point[0] / 360 + 0.5) * scale,
+    ((1 -
+      Math.log(
+        Math.tan((point[1] * Math.PI) / 180) +
+          1 / Math.cos((point[1] * Math.PI) / 180)
+      ) /
+        Math.PI) /
+      2) *
+      scale,
   ];
 }
 
+function lon2tile(lon, zoom) {
+  return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
+}
+
+function lat2tile(lat, zoom) {
+  return Math.floor(
+    ((1 -
+      Math.log(
+        Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)
+      ) /
+        Math.PI) /
+      2) *
+      Math.pow(2, zoom)
+  );
+}
+
 function tile2lon(x, z) {
-  return (x/Math.pow(2,z)*360-180);
+  return (x / Math.pow(2, z)) * 360 - 180;
 }
 
 function tile2lat(y, z) {
-  const n = Math.PI-2*Math.PI*y/Math.pow(2,z);
-  return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
+  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
+  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
 
-function len2(a)   { return Math.sqrt( a[0]*a[0] + a[1]*a[1]);}
-function dot2(a,b) { return a[0]*b[0] + a[1]*b[1];}
-function sub2(a,b) { return [a[0]-b[0], a[1]-b[1]];}
-function add2(a,b) { return [a[0]+b[0], a[1]+b[1]];}
-function mul2scalar(a,f) { return [a[0]*f, a[1]*f];}
-function norm2(a)  { const l = len2(a); return [a[0]/l, a[1]/l]; }
+function len2(a) {
+  return Math.sqrt(a[0] * a[0] + a[1] * a[1]);
+}
+function dot2(a, b) {
+  return a[0] * b[0] + a[1] * b[1];
+}
+function sub2(a, b) {
+  return [a[0] - b[0], a[1] - b[1]];
+}
+function add2(a, b) {
+  return [a[0] + b[0], a[1] + b[1]];
+}
+function mul2scalar(a, f) {
+  return [a[0] * f, a[1] * f];
+}
+function norm2(a) {
+  const l = len2(a);
+  return [a[0] / l, a[1] / l];
+}
 
-function dot3(a,b) { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];}
-function sub3(a,b) { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]];}
-function add3(a,b) { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]];}
-function add3scalar(a,f) { return [a[0]+f, a[1]+f, a[2]+f];}
-function mul3scalar(a,f) { return [a[0]*f, a[1]*f, a[2]*f];}
-function len3(a)   { return Math.sqrt( a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);}
-function squaredLength(a) { return a[0]*a[0] + a[1]*a[1] + a[2]*a[2];}
-function norm3(a)  { const l = len3(a); return [a[0]/l, a[1]/l, a[2]/l]; }
-function dist3(a,b){ return len3(sub3(a,b));}
-function equal3(a, b) { return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];}
+function dot3(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+function sub3(a, b) {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+function add3(a, b) {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+function add3scalar(a, f) {
+  return [a[0] + f, a[1] + f, a[2] + f];
+}
+function mul3scalar(a, f) {
+  return [a[0] * f, a[1] * f, a[2] * f];
+}
+function len3(a) {
+  return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+}
+function squaredLength(a) {
+  return a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
+}
+function norm3(a) {
+  const l = len3(a);
+  return [a[0] / l, a[1] / l, a[2] / l];
+}
+function dist3(a, b) {
+  return len3(sub3(a, b));
+}
+function equal3(a, b) {
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+}
 
 class View {
   getViewQuad() {
@@ -4895,8 +5418,8 @@ class View {
     // } else {
     this.Markers = new View.MarkersSimple();
     // }
-    this.Overlaymap = new View.Overlaymap();
     this.Basemap = new View.Basemap();
+    this.Overlaymap = new View.Overlaymap();
 
     this.Overlay = new View.Overlay();
     this.ambientMap = new View.AmbientMap();
@@ -4943,14 +5466,13 @@ class View {
           GL.disable(GL.BLEND);
           GL.enable(GL.DEPTH_TEST);
 
-          this.Overlaymap.render();
           this.Basemap.render();
+          this.Overlaymap.render();
         } else {
           const viewTrapezoid = this.getViewQuad();
 
           View.Sun.updateView(viewTrapezoid);
           this.Horizon.updateGeometry(viewTrapezoid);
-
           this.cameraGBuffer.render(
             this.viewMatrix,
             this.projMatrix,
@@ -4971,10 +5493,10 @@ class View {
             this.ambientMap.framebuffer.renderTexture,
             viewSize
           );
+          this.Basemap.render();
+          this.Overlaymap.render();
           this.Buildings.render(this.sunGBuffer.framebuffer);
           this.Markers.render(this.sunGBuffer.framebuffer);
-          this.Overlaymap.render();
-          this.Basemap.render();
 
           GL.enable(GL.BLEND);
 
@@ -5683,18 +6205,24 @@ View.MapShadows = class {
     this.mapPlane.destroy();
   }
 };
-
 View.Basemap = class {
-
-  constructor () {
+  constructor() {
     this.shader = new GLX.Shader({
       source: shaders.basemap,
-      attributes: ['aPosition', 'aTexCoord'],
-      uniforms: ['uViewMatrix', 'uModelMatrix', 'uTexIndex', 'uFogDistance', 'uFogBlurDistance', 'uLowerEdgePoint', 'uViewDirOnMap']
+      attributes: ["aPosition", "aTexCoord"],
+      uniforms: [
+        "uViewMatrix",
+        "uModelMatrix",
+        "uTexIndex",
+        "uFogDistance",
+        "uFogBlurDistance",
+        "uLowerEdgePoint",
+        "uViewDirOnMap",
+      ],
     });
   }
 
-  render () {
+  render() {
     const layer = APP.basemapGrid;
 
     if (!layer) {
@@ -5709,15 +6237,16 @@ View.Basemap = class {
 
     shader.enable();
 
-    shader.setParam('uFogDistance',     '1f',  APP.view.fogDistance);
-    shader.setParam('uFogBlurDistance', '1f',  APP.view.fogBlurDistance);
-    shader.setParam('uLowerEdgePoint',  '2fv', APP.view.lowerLeftOnMap);
-    shader.setParam('uViewDirOnMap',    '2fv', APP.view.viewDirOnMap);
+    shader.setParam("uFogDistance", "1f", APP.view.fogDistance);
+    shader.setParam("uFogBlurDistance", "1f", APP.view.fogBlurDistance);
+    shader.setParam("uLowerEdgePoint", "2fv", APP.view.lowerLeftOnMap);
+    shader.setParam("uViewDirOnMap", "2fv", APP.view.viewDirOnMap);
 
     const zoom = Math.round(APP.zoom);
 
     let tile;
-    for (let key in layer.visibleTiles) { // TODO: do not refer to layer.visibleTiles
+    for (let key in layer.visibleTiles) {
+      // TODO: do not refer to layer.visibleTiles
       tile = layer.tiles[key];
 
       if (tile && tile.isReady) {
@@ -5725,7 +6254,9 @@ View.Basemap = class {
         continue;
       }
 
-      const parentKey = [tile.x/2<<0, tile.y/2<<0, zoom-1].join(',');
+      const parentKey = [(tile.x / 2) << 0, (tile.y / 2) << 0, zoom - 1].join(
+        ","
+      );
       if (layer.tiles[parentKey] && layer.tiles[parentKey].isReady) {
         // TODO: there will be overlap with adjacent tiles or parents of adjacent tiles!
         this.renderTile(layer.tiles[parentKey]);
@@ -5733,15 +6264,15 @@ View.Basemap = class {
       }
 
       const children = [
-        [tile.x*2,   tile.y*2,   tile.zoom+1].join(','),
-        [tile.x*2+1, tile.y*2,   tile.zoom+1].join(','),
-        [tile.x*2,   tile.y*2+1, tile.zoom+1].join(','),
-        [tile.x*2+1, tile.y*2+1, tile.zoom+1].join(',')
+        [tile.x * 2, tile.y * 2, tile.zoom + 1].join(","),
+        [tile.x * 2 + 1, tile.y * 2, tile.zoom + 1].join(","),
+        [tile.x * 2, tile.y * 2 + 1, tile.zoom + 1].join(","),
+        [tile.x * 2 + 1, tile.y * 2 + 1, tile.zoom + 1].join(","),
       ];
 
       for (let i = 0; i < 4; i++) {
-        if (layer.tiles[ children[i] ] && layer.tiles[ children[i] ].isReady) {
-          this.renderTile(layer.tiles[ children[i] ]);
+        if (layer.tiles[children[i]] && layer.tiles[children[i]].isReady) {
+          this.renderTile(layer.tiles[children[i]]);
         }
       }
     }
@@ -5749,7 +6280,7 @@ View.Basemap = class {
     shader.disable();
   }
 
-  renderTile (tile) {
+  renderTile(tile) {
     const shader = this.shader;
 
     const modelMatrix = new GLX.Matrix();
@@ -5761,21 +6292,29 @@ View.Basemap = class {
     );
 
     GL.enable(GL.POLYGON_OFFSET_FILL);
-    GL.polygonOffset(MAX_USED_ZOOM_LEVEL - tile.zoom, MAX_USED_ZOOM_LEVEL - tile.zoom);
+    GL.polygonOffset(
+      MAX_USED_ZOOM_LEVEL - tile.zoom,
+      MAX_USED_ZOOM_LEVEL - tile.zoom
+    );
 
-    shader.setMatrix('uModelMatrix', '4fv', modelMatrix.data);
-    shader.setMatrix('uViewMatrix',  '4fv', GLX.Matrix.multiply(modelMatrix, APP.view.viewProjMatrix));
+    shader.setMatrix("uModelMatrix", "4fv", modelMatrix.data);
+    shader.setMatrix(
+      "uViewMatrix",
+      "4fv",
+      GLX.Matrix.multiply(modelMatrix, APP.view.viewProjMatrix)
+    );
 
-    shader.setBuffer('aPosition', tile.vertexBuffer);
-    shader.setBuffer('aTexCoord', tile.texCoordBuffer);
-    shader.setTexture('uTexIndex', 0, tile.texture);
+    shader.setBuffer("aPosition", tile.vertexBuffer);
+    shader.setBuffer("aTexCoord", tile.texCoordBuffer);
+    shader.setTexture("uTexIndex", 0, tile.texture);
 
     GL.drawArrays(GL.TRIANGLE_STRIP, 0, tile.vertexBuffer.numItems);
     GL.disable(GL.POLYGON_OFFSET_FILL);
   }
 
-  destroy () {}
+  destroy() {}
 };
+
 View.Overlaymap = class {
   constructor() {
     this.shader = new GLX.Shader({
@@ -5807,12 +6346,10 @@ View.Overlaymap = class {
       const shader = this.shader;
 
       shader.enable();
-
       shader.setParam("uFogDistance", "1f", APP.view.fogDistance);
       shader.setParam("uFogBlurDistance", "1f", APP.view.fogBlurDistance);
       shader.setParam("uLowerEdgePoint", "2fv", APP.view.lowerLeftOnMap);
       shader.setParam("uViewDirOnMap", "2fv", APP.view.viewDirOnMap);
-      shader.setParam("uAlpha", "1f", 0.2);
 
       const zoom = Math.round(APP.zoom);
 
@@ -5864,6 +6401,10 @@ View.Overlaymap = class {
       0
     );
 
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+    GL.clearColor(0.0, 0.0, 0.0, 0.0);
+    GL.depthFunc(GL.GEQUAL);
     GL.enable(GL.POLYGON_OFFSET_FILL);
     GL.polygonOffset(
       MAX_USED_ZOOM_LEVEL - tile.zoom,
@@ -5879,11 +6420,13 @@ View.Overlaymap = class {
 
     shader.setBuffer("aPosition", tile.vertexBuffer);
     shader.setBuffer("aTexCoord", tile.texCoordBuffer);
-    shader.setParam("uAlpha", "1f", 0.2);
+    if (tile.options.opacity !== undefined)
+      shader.setParam("uAlpha", "1f", tile.options.opacity);
     shader.setTexture("uTexIndex", 0, tile.texture);
 
     GL.drawArrays(GL.TRIANGLE_STRIP, 0, tile.vertexBuffer.numItems);
     GL.disable(GL.POLYGON_OFFSET_FILL);
+    GL.depthFunc(GL.LESS);
   }
 
   destroy() {

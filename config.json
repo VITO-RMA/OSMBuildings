@@ -67,6 +67,7 @@
     "src/Request.js",
     "src/util.js",
 
+    "src/layer/WMSTile.js",
     "src/layer/Grid.js",
     "src/layer/Tile.js",
     "src/layer/BitmapTile.js",

@@ -16,8 +16,11 @@
 <li><a href="#method-addOBJ">addOBJ</a></li>
 <li><a href="#method-addGeoJSON">addGeoJSON</a></li>
 <li><a href="#method-addGeoJSONTiles">addGeoJSONTiles</a></li>
+<li><a href="#method-addGeoJSONWMSTiles">addGeoJSONWMSTiles</a></li>
 <li><a href="#method-addMapTiles">addMapTiles</a></li>
 <li><a href="#method-addGridLayer">addGridLayer</a></li>
+<li><a href="#method-removeGridLayer">removeGridLayer</a></li>
+<li><a href="#method-removeAllGridLayers">removeAllGridLayers</a></li>
 <li><a href="#method-highlight">highlight</a></li>
 <li><a href="#method-hide">hide</a></li>
 <li><a href="#method-show">show</a></li>
@@ -928,6 +931,89 @@ This is for continuous building coverage.</p>
 </article>
 
 <article>
+<a name="method-addGeoJSONWMSTiles"></a>
+<h3>addGeoJSONWMSTiles</h3>
+
+<p>Adds a GeoJSON tile layer to the map.
+This is for continuous building coverage.</p>
+
+<em>Parameters</em>
+<table style="width:100%">
+<colgroup>
+<col width="120"/>
+<col width="80"/>
+<col width="100"/>
+<col width="50"/>
+<col/>
+</colgroup>
+
+<thead>
+<tr><th>Name</th><th>Type</th><th>Default</th><th>Optional</th><th>Description</th></tr>
+</thead>
+
+<tbody>
+<tr>
+<td>url</td>
+<td>String</td>
+<td>https://{s}.data.osmbuildings.org/0.2/{k}/tile/{z}/{x}/{y}.json</td>
+<td></td>
+<td>url The URL of the GeoJSON tile server</td>
+</tr>
+
+<tr>
+<td>options</td>
+<td>Object</td>
+<td>{}</td>
+<td>optional</td>
+<td></td>
+</tr>
+
+<tr>
+<td>options.fixedZoom</td>
+<td>Number</td>
+<td>15</td>
+<td></td>
+<td>Tiles are fetched for this zoom level only. Other zoom levels are scaled up/down to this value</td>
+</tr>
+
+<tr>
+<td>options.minZoom</td>
+<td>Number</td>
+<td>14.5</td>
+<td></td>
+<td>Minimum zoom level to show features from this layer. Defaults to and limited by global minZoom.</td>
+</tr>
+
+<tr>
+<td>options.maxZoom</td>
+<td>Number</td>
+<td>maxZoom</td>
+<td></td>
+<td>Maximum zoom level to show features from this layer. Defaults to and limited by global maxZoom.</td>
+</tr>
+
+</tbody>
+</table>
+
+<em>Returns</em>
+<table>
+<thead>
+<tr><th class="returns-type">Type</th><th class="returns-description">Description</th></tr>
+</thead>
+
+<tbody>
+<tr>
+<td class="returns-type">Object</td>
+<td class="returns-description">The added layer object</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="top"><a href="#top">Top</a></div>
+</article>
+
+<article>
 <a name="method-addMapTiles"></a>
 <h3>addMapTiles</h3>
 
@@ -1019,6 +1105,80 @@ This is for continuous building coverage.</p>
 <tr>
 <td class="returns-type">Object</td>
 <td class="returns-description">The added layer object</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="top"><a href="#top">Top</a></div>
+</article>
+
+<article>
+<a name="method-removeGridLayer"></a>
+<h3>removeGridLayer</h3>
+
+<p>removes a 2d base map source.</p>
+
+<em>Parameters</em>
+<table style="width:100%">
+<colgroup>
+<col width="120"/>
+<col width="80"/>
+<col width="100"/>
+<col width="50"/>
+<col/>
+</colgroup>
+
+<thead>
+<tr><th>Name</th><th>Type</th><th>Default</th><th>Optional</th><th>Description</th></tr>
+</thead>
+
+<tbody>
+<tr>
+<td>grid</td>
+<td>Grid</td>
+<td></td>
+<td></td>
+<td>The Grid object returned from addGridLayer</td>
+</tr>
+
+</tbody>
+</table>
+
+<em>Returns</em>
+<table>
+<thead>
+<tr><th class="returns-type">Type</th><th class="returns-description">Description</th></tr>
+</thead>
+
+<tbody>
+<tr>
+<td class="returns-type">void</td>
+<td class="returns-description">void</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="top"><a href="#top">Top</a></div>
+</article>
+
+<article>
+<a name="method-removeAllGridLayers"></a>
+<h3>removeAllGridLayers</h3>
+
+<p>removes all  2d  maps source.</p>
+
+<em>Returns</em>
+<table>
+<thead>
+<tr><th class="returns-type">Type</th><th class="returns-description">Description</th></tr>
+</thead>
+
+<tbody>
+<tr>
+<td class="returns-type">void</td>
+<td class="returns-description">void</td>
 </tr>
 
 </tbody>

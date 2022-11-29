@@ -328,6 +328,23 @@ class OSMBuildings {
     return this.dataGrid;
   }
 
+  // TODO: allow more data layers later on
+  /**
+   * Adds a GeoJSON tile layer to the map.
+   * This is for continuous building coverage.
+   * @param {String} [url=https://{s}.data.osmbuildings.org/0.2/{k}/tile/{z}/{x}/{y}.json] url The URL of the GeoJSON tile server
+   * @param {Object} [options]
+   * @param {Number} [options.fixedZoom=15] Tiles are fetched for this zoom level only. Other zoom levels are scaled up/down to this value
+   * @param {Number} [options.minZoom=14.5] Minimum zoom level to show features from this layer. Defaults to and limited by global minZoom.
+   * @param {Number} [options.maxZoom=maxZoom] Maximum zoom level to show features from this layer. Defaults to and limited by global maxZoom.
+   * @return {Object} The added layer object
+   */
+  addGeoJSONWMSTiles(url, options = {}) {
+    options.fixedZoom = options.fixedZoom || 15;
+    this.dataGrid = new WMSTile(url, GeoJSONTile, options, 2);
+    return this.dataGrid;
+  }
+
   /**
    * Adds a 2d base map source. This renders below the buildings.
    * @param {String} url The URL of the map server. This could be from Mapbox or other tile servers
@@ -344,7 +361,36 @@ class OSMBuildings {
    * @return {Object} The added layer object
    */
   addGridLayer(url, options) {
+    const grid = new Grid(url, BitmapTile, options, 4);
     this.gridLayers.push(new Grid(url, BitmapTile, options, 4));
+
+    return grid;
+  }
+
+  /**
+   * removes a 2d base map source.
+   * @param {Grid} grid The Grid object returned from addGridLayer
+   * @return {void} void
+   */
+  removeGridLayer(grid) {
+    const index = this.gridLayers.find(
+      (current) => current.source === grid.source
+    );
+    const [removedGrid] = this.gridLayers.splice(index, 1);
+    removedGrid.destroy();
+
+    return;
+  }
+
+  /**
+   * removes all  2d  maps source.
+   * @return {void} void
+   */
+  removeAllGridLayers() {
+    this.gridLayers.forEach((grid) => grid.destroy());
+    this.gridLayers.length = 0;
+
+    return;
   }
 
   /**
@@ -445,7 +491,14 @@ class OSMBuildings {
 
     this.stateDebounce = setTimeout(() => {
       this.stateDebounce = null;
-      const params = [];
+      const converted = new URLSearchParams(window.location.search);
+      converted.delete("lat");
+      converted.delete("lon");
+      converted.delete("zoom");
+      converted.delete("tilt");
+      converted.delete("rotation");
+
+      const params = converted.toString().split("&");
       params.push("lat=" + this.position.latitude.toFixed(6));
       params.push("lon=" + this.position.longitude.toFixed(6));
       params.push("zoom=" + this.zoom.toFixed(1));
@@ -661,6 +714,7 @@ class OSMBuildings {
     this.view.destroy();
 
     this.gridLayers.forEach((grid) => grid.destroy());
+    this.gridLayers.length = 0;
     if (this.basemapGrid) this.basemapGrid.destroy();
     // this.dataGrid.destroy();
 
@@ -672,7 +726,8 @@ class OSMBuildings {
     this.features.destroy();
     this.markers.destroy();
 
-    this.domNode.innerHTML = "";
+    this.domNode.removeChild(this.container);
+    this.container = undefined;
   }
 
   // destroyWorker () {

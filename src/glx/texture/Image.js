@@ -141,6 +141,8 @@ GLX.texture.Image = class {
 
     image = this.clamp(image, GL.getParameter(GL.MAX_TEXTURE_SIZE));
 
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
     GL.bindTexture(GL.TEXTURE_2D, this.id);
     GL.texParameteri(
       GL.TEXTURE_2D,

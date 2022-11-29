@@ -29,12 +29,10 @@ View.Overlaymap = class {
       const shader = this.shader;
 
       shader.enable();
-
       shader.setParam("uFogDistance", "1f", APP.view.fogDistance);
       shader.setParam("uFogBlurDistance", "1f", APP.view.fogBlurDistance);
       shader.setParam("uLowerEdgePoint", "2fv", APP.view.lowerLeftOnMap);
       shader.setParam("uViewDirOnMap", "2fv", APP.view.viewDirOnMap);
-      shader.setParam("uAlpha", "1f", 0.2);
 
       const zoom = Math.round(APP.zoom);
 
@@ -86,6 +84,10 @@ View.Overlaymap = class {
       0
     );
 
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+    GL.clearColor(0.0, 0.0, 0.0, 0.0);
+    GL.depthFunc(GL.GEQUAL);
     GL.enable(GL.POLYGON_OFFSET_FILL);
     GL.polygonOffset(
       MAX_USED_ZOOM_LEVEL - tile.zoom,
@@ -101,11 +103,13 @@ View.Overlaymap = class {
 
     shader.setBuffer("aPosition", tile.vertexBuffer);
     shader.setBuffer("aTexCoord", tile.texCoordBuffer);
-    shader.setParam("uAlpha", "1f", 0.2);
+    if (tile.options.opacity !== undefined)
+      shader.setParam("uAlpha", "1f", tile.options.opacity);
     shader.setTexture("uTexIndex", 0, tile.texture);
 
     GL.drawArrays(GL.TRIANGLE_STRIP, 0, tile.vertexBuffer.numItems);
     GL.disable(GL.POLYGON_OFFSET_FILL);
+    GL.depthFunc(GL.LESS);
   }
 
   destroy() {

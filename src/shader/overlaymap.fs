@@ -24,9 +24,12 @@ void main() {
     gl_FragColor.r = textCol.r;
     gl_FragColor.g = textCol.g;
     gl_FragColor.b = textCol.b;
-    gl_FragColor.a = clamp(uAlpha, 0.0, 1.0);
+    gl_FragColor.a = clamp(uAlpha-fogIntensity, 0.0, 1.0);
     if(textCol.a < 0.0001) {
-      gl_FragColor.a = textCol.a;
+      gl_FragColor.a = 0.0;
+      gl_FragColor.r = 0.0;
+      gl_FragColor.g = 0.0;
+      gl_FragColor.b = 0.0;
     }
   }
 }

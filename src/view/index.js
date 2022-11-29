@@ -33,8 +33,8 @@ class View {
     // } else {
     this.Markers = new View.MarkersSimple();
     // }
-    this.Overlaymap = new View.Overlaymap();
     this.Basemap = new View.Basemap();
+    this.Overlaymap = new View.Overlaymap();
 
     this.Overlay = new View.Overlay();
     this.ambientMap = new View.AmbientMap();
@@ -81,14 +81,13 @@ class View {
           GL.disable(GL.BLEND);
           GL.enable(GL.DEPTH_TEST);
 
-          this.Overlaymap.render();
           this.Basemap.render();
+          this.Overlaymap.render();
         } else {
           const viewTrapezoid = this.getViewQuad();
 
           View.Sun.updateView(viewTrapezoid);
           this.Horizon.updateGeometry(viewTrapezoid);
-
           this.cameraGBuffer.render(
             this.viewMatrix,
             this.projMatrix,
@@ -109,10 +108,10 @@ class View {
             this.ambientMap.framebuffer.renderTexture,
             viewSize
           );
+          this.Basemap.render();
+          this.Overlaymap.render();
           this.Buildings.render(this.sunGBuffer.framebuffer);
           this.Markers.render(this.sunGBuffer.framebuffer);
-          this.Overlaymap.render();
-          this.Basemap.render();
 
           GL.enable(GL.BLEND);
 

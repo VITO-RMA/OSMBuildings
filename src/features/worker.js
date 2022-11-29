@@ -33,7 +33,6 @@ function getPickingColor(i) {
 
 onmessage = function (e) {
   const params = e.data;
-
   if (params.type === "GeoJSON") {
     loadGeoJSON(params.url, params.options);
   }
@@ -72,14 +71,18 @@ function loadGeoJSON(url, options = {}) {
     postMessage("load");
     processGeoJSON(url, options);
   } else {
-    Request.getJSON(url, (err, geojson) => {
-      if (err) {
-        postMessage("error");
-      } else {
-        postMessage("load");
-        processGeoJSON(geojson, options);
-      }
-    });
+    Request.getJSON(
+      url,
+      (err, geojson) => {
+        if (err) {
+          postMessage("error");
+        } else {
+          postMessage("load");
+          processGeoJSON(geojson, options);
+        }
+      },
+      options
+    );
   }
 }
 
@@ -129,27 +132,31 @@ function processGeoJSON(geojson, options) {
 //*****************************************************************************
 
 function loadOBJ(url, options = {}) {
-  Request.getText(url, (err, obj) => {
-    if (err) {
-      postMessage("error");
-      return;
-    }
+  Request.getText(
+    url,
+    (err, obj) => {
+      if (err) {
+        postMessage("error");
+        return;
+      }
 
-    let match = obj.match(/^mtllib\s+(.*)$/m);
-    if (!match) {
-      postMessage("load");
-      processOBJ(obj, null, options);
-    } else {
-      Request.getText(url.replace(/[^\/]+$/, "") + match[1], (err, mtl) => {
-        if (err) {
-          postMessage("error");
-        } else {
-          postMessage("load");
-          processOBJ(obj, mtl, options);
-        }
-      });
-    }
-  });
+      let match = obj.match(/^mtllib\s+(.*)$/m);
+      if (!match) {
+        postMessage("load");
+        processOBJ(obj, null, options);
+      } else {
+        Request.getText(url.replace(/[^\/]+$/, "") + match[1], (err, mtl) => {
+          if (err) {
+            postMessage("error");
+          } else {
+            postMessage("load");
+            processOBJ(obj, mtl, options);
+          }
+        });
+      }
+    },
+    options
+  );
 }
 
 function processOBJ(obj, mtl, options = {}) {

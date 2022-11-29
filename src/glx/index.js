@@ -5,7 +5,8 @@ class GLX {
     const canvasOptions = {
       antialias: !fastMode,
       depth: true,
-      premultipliedAlpha: false,
+      // premultipliedAlpha: false,
+      alpha: true,
     };
 
     try {
@@ -34,7 +35,7 @@ class GLX {
     GL.cullFace(GL.BACK);
     GL.enable(GL.CULL_FACE);
     GL.enable(GL.DEPTH_TEST);
-    GL.clearColor(0.5, 0.5, 0.5, 1);
+    GL.clearColor(0.0, 0.0, 0.0, 0.0);
 
     if (!fastMode) {
       // TODO OSMB4 always activate but use dynamically

@@ -3865,11 +3865,14 @@ class WMSTile {
     const s = "abcd"[(x + y) % 4];
     const [plainUrl, unparsedQueryParams] = this.source.split("?");
     const urlQueryParms = new URLSearchParams(unparsedQueryParams);
+    const size = getTileSizeInMeters(APP.position.latitude, z) + 150;
+    const tileLon = tile2lon(x, z);
+    const tileLat = tile2lat(y, z);
     const bboxCoords = [
-      tile2lon(x, z),
-      tile2lat(y, z),
-      tile2lon(x, z) + 0.01,
-      tile2lat(y, z) + 0.01,
+      tileLon,
+      tileLat,
+      tileLon + size / METERS_PER_DEGREE_LATITUDE,
+      tileLat + size / METERS_PER_DEGREE_LATITUDE,
     ];
 
     urlQueryParms.set("bbox", bboxCoords.join(","));

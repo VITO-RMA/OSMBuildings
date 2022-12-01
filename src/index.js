@@ -362,7 +362,7 @@ class OSMBuildings {
    */
   addGridLayer(url, options) {
     const grid = new Grid(url, BitmapTile, options, 4);
-    this.gridLayers.push(new Grid(url, BitmapTile, options, 4));
+    this.gridLayers.push(grid);
 
     return grid;
   }
@@ -389,6 +389,33 @@ class OSMBuildings {
   removeAllGridLayers() {
     this.gridLayers.forEach((grid) => grid.destroy());
     this.gridLayers.length = 0;
+
+    return;
+  }
+
+  /**
+   * Adds a 2d base map source. This renders below the buildings.
+   * @param {String} url The URL of the map server. This could be from Mapbox or other tile servers
+   * @return {Object} The added layer object
+   */
+  addWMSLayer(url, options) {
+    const grid = new WMSTile(url, BitmapTile, options, 4);
+    this.gridLayers.push(grid);
+
+    return grid;
+  }
+
+  /**
+   * removes a 2d base map source.
+   * @param {Grid} grid The Grid object returned from addGridLayer
+   * @return {void} void
+   */
+  removeWMSLayer(grid) {
+    const index = this.gridLayers.find(
+      (current) => current.source === grid.source
+    );
+    const [removedGrid] = this.gridLayers.splice(index, 1);
+    removedGrid.destroy();
 
     return;
   }

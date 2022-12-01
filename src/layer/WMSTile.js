@@ -45,11 +45,16 @@ class WMSTile {
     const s = "abcd"[(x + y) % 4];
     const [plainUrl, unparsedQueryParams] = this.source.split("?");
     const urlQueryParms = new URLSearchParams(unparsedQueryParams);
+    const size = getTileSizeInMeters(APP.position.latitude, z);
+    const tileLon = tile2lon(x, z);
+    const tileLat = tile2lat(y, z);
     const bboxCoords = [
-      tile2lon(x, z),
-      tile2lat(y, z),
-      tile2lon(x, z) + 0.1,
-      tile2lat(y, z) + 0.1,
+      tileLon,
+      tileLat,
+      tileLon + (size / EARTH_CIRCUMFERENCE_IN_METERS) * (180 / Math.PI),
+      tileLat +
+        ((size / EARTH_CIRCUMFERENCE_IN_METERS) * (180 / Math.PI)) /
+          Math.cos((tileLat * Math.PI) / 180),
     ];
 
     urlQueryParms.set("bbox", bboxCoords.join(","));

@@ -3868,8 +3868,8 @@ class WMSTile {
     const bboxCoords = [
       tile2lon(x, z),
       tile2lat(y, z),
-      tile2lon(x, z) + 0.1,
-      tile2lat(y, z) + 0.1,
+      tile2lon(x, z) + 0.01,
+      tile2lat(y, z) + 0.01,
     ];
 
     urlQueryParms.set("bbox", bboxCoords.join(","));

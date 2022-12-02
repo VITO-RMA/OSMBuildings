@@ -17,6 +17,7 @@ View.Overlaymap = class {
   }
 
   render() {
+    const { originalBlendFunc, originalDepthFunc } = this.enableTileBlending();
     APP.gridLayers.forEach((layer, index) => {
       if (!layer) {
         return;
@@ -71,6 +72,7 @@ View.Overlaymap = class {
 
       shader.disable();
     });
+    this.restoreTileBlending(originalBlendFunc, originalDepthFunc);
   }
 
   renderTile(tile, index) {
@@ -84,10 +86,6 @@ View.Overlaymap = class {
       0
     );
 
-    GL.enable(GL.BLEND);
-    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
-    GL.clearColor(0.0, 0.0, 0.0, 0.0);
-    GL.depthFunc(GL.GEQUAL);
     GL.enable(GL.POLYGON_OFFSET_FILL);
     GL.polygonOffset(
       MAX_USED_ZOOM_LEVEL - tile.zoom,
@@ -109,7 +107,31 @@ View.Overlaymap = class {
 
     GL.drawArrays(GL.TRIANGLE_STRIP, 0, tile.vertexBuffer.numItems);
     GL.disable(GL.POLYGON_OFFSET_FILL);
-    GL.depthFunc(GL.LESS);
+  }
+
+  enableTileBlending() {
+    const originalBlendFunc = {
+      src: GL.getParameter(GL.BLEND_SRC_RGB),
+      dst: GL.getParameter(GL.BLEND_DST_RGB),
+      src_alpha: GL.getParameter(GL.BLEND_SRC_ALPHA),
+      dst_alpha: GL.getParameter(GL.BLEND_DST_ALPHA),
+    };
+    const originalDepthFunc = GL.getParameter(GL.DEPTH_FUNC);
+
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+    GL.depthFunc(GL.LEQUAL);
+
+    return { originalBlendFunc, originalDepthFunc };
+  }
+
+  restoreTileBlending(originalBlendFunc, originalDepthFunc) {
+    GL.disable(GL.BLEND);
+    GL.blendFunc(
+      originalBlendFunc.src || originalBlendFunc.src_alpha,
+      originalBlendFunc.dst || originalBlendFunc.dst_alpha
+    );
+    GL.depthFunc(originalDepthFunc);
   }
 
   destroy() {

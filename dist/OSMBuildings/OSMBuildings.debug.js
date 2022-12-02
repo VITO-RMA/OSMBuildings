@@ -1924,6 +1924,8 @@ GLX.Matrix.identity = () => {
 
 GLX.texture = {};
 
+const bitmapCache = {};
+
 GLX.texture.Image = class {
   constructor() {
     this.abortController = null;
@@ -1962,6 +1964,13 @@ GLX.texture.Image = class {
 
   load(url, callback, options) {
     //load image with the header!
+    if (bitmapCache[url]) {
+      this.set(bitmapCache[url]);
+      if (callback) {
+        callback(bitmapCache[url]);
+      }
+      return;
+    }
     const thisArg = this;
     if (options && options.headers) {
       if (this.abortController) this.abortController.abort();
@@ -1970,6 +1979,7 @@ GLX.texture.Image = class {
         (blob) => {
           createImageBitmap(blob, 0, 0, 256, 256)
             .then((image) => {
+              bitmapCache[url] = image;
               thisArg.set(image);
               if (callback) {
                 callback(image);
@@ -2088,6 +2098,7 @@ GLX.texture.Image = class {
         GL.anisotropyExtension.maxAnisotropyLevel
       );
     }
+    GL.disable(GL.BLEND);
 
     GL.bindTexture(GL.TEXTURE_2D, null);
   }
@@ -2730,7 +2741,12 @@ class OSMBuildings {
    */
   addGeoJSONWMSTiles(url, options = {}) {
     options.fixedZoom = options.fixedZoom || 15;
-    this.dataGrid = new WMSTile(url, GeoJSONTile, options, 2);
+    this.dataGrid = new WMSTile(
+      url,
+      GeoJSONTile,
+      { ...options, fixedTileGrowth: 150 },
+      2
+    );
     return this.dataGrid;
   }
 
@@ -3856,6 +3872,7 @@ class WMSTile {
     this.fixedZoom = options.fixedZoom;
     this.crs = options.crs;
 
+    this.fixedTileGrowth = options.fixedTileGrowth || 0;
     this.options = options.headers
       ? {
           headers: { ...options.headers },
@@ -3892,7 +3909,8 @@ class WMSTile {
     const s = "abcd"[(x + y) % 4];
     const [plainUrl, unparsedQueryParams] = this.source.split("?");
     const urlQueryParms = new URLSearchParams(unparsedQueryParams);
-    const size = getTileSizeInMeters(APP.position.latitude, z) + 150;
+    const size =
+      getTileSizeInMeters(APP.position.latitude, z) + this.fixedTileGrowth;
     const tileLon = tile2lon(x, z);
     const tileLat = tile2lat(y, z);
     const bboxCoords = [
@@ -4677,6 +4695,8 @@ class FeatureCollection extends Collection {
   }
 }
 
+const featureCache = {};
+
 class Feature {
   constructor(type, url, options = {}, callback = function () {}) {
     this.type = type;
@@ -4708,6 +4728,9 @@ class Feature {
   }
 
   load(url) {
+    if (featureCache[url]) {
+      return setTimeout(this.onLoad, 20, featureCache[url]);
+    }
     // TODO: perhaps have some workers attached to collection and just ask for them
     APP.workers.get((worker) => {
       worker.onMessage((res) => {
@@ -4721,7 +4744,7 @@ class Feature {
           this.callback();
           return;
         }
-
+        featureCache[url] = res;
         this.onLoad(res);
         worker.free();
       });
@@ -4734,27 +4757,27 @@ class Feature {
     this.latitude = res.position.latitude;
     this.metersPerLon =
       METERS_PER_DEGREE_LATITUDE * Math.cos((this.latitude / 180) * Math.PI);
-
+    const thisArg = this;
     //****** init buffers *********************************
 
     // this cascade ralaxes rendering a lot when new tile data arrives
     // TODO: destroy properly, even while this cascade might run -> make each step abortable
     this.vertexBuffer = new GLX.Buffer(3, res.vertices);
     this.timer = setTimeout(() => {
-      this.normalBuffer = new GLX.Buffer(3, res.normals);
-      this.timer = setTimeout(() => {
-        this.colorBuffer = new GLX.Buffer(3, res.colors);
-        this.timer = setTimeout(() => {
-          this.texCoordBuffer = new GLX.Buffer(2, res.texCoords);
-          this.timer = setTimeout(() => {
-            this.heightBuffer = new GLX.Buffer(1, res.heights);
-            this.timer = setTimeout(() => {
-              this.pickingBuffer = new GLX.Buffer(3, res.pickingColors);
-              this.timer = setTimeout(() => {
-                this.items = res.items;
-                this.applyTintAndZScale();
-                APP.features.add(this);
-                this.fade = 0;
+      thisArg.normalBuffer = new GLX.Buffer(3, res.normals);
+      thisArg.timer = setTimeout(() => {
+        thisArg.colorBuffer = new GLX.Buffer(3, res.colors);
+        thisArg.timer = setTimeout(() => {
+          thisArg.texCoordBuffer = new GLX.Buffer(2, res.texCoords);
+          thisArg.timer = setTimeout(() => {
+            thisArg.heightBuffer = new GLX.Buffer(1, res.heights);
+            thisArg.timer = setTimeout(() => {
+              thisArg.pickingBuffer = new GLX.Buffer(3, res.pickingColors);
+              thisArg.timer = setTimeout(() => {
+                thisArg.items = res.items;
+                thisArg.applyTintAndZScale();
+                APP.features.add(thisArg);
+                thisArg.fade = 0;
               }, 20);
             }, 20);
           }, 20);
@@ -6364,6 +6387,7 @@ View.Overlaymap = class {
   }
 
   render() {
+    const { originalBlendFunc, originalDepthFunc } = this.enableTileBlending();
     APP.gridLayers.forEach((layer, index) => {
       if (!layer) {
         return;
@@ -6418,6 +6442,7 @@ View.Overlaymap = class {
 
       shader.disable();
     });
+    this.restoreTileBlending(originalBlendFunc, originalDepthFunc);
   }
 
   renderTile(tile, index) {
@@ -6431,10 +6456,6 @@ View.Overlaymap = class {
       0
     );
 
-    GL.enable(GL.BLEND);
-    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
-    GL.clearColor(0.0, 0.0, 0.0, 0.0);
-    GL.depthFunc(GL.GEQUAL);
     GL.enable(GL.POLYGON_OFFSET_FILL);
     GL.polygonOffset(
       MAX_USED_ZOOM_LEVEL - tile.zoom,
@@ -6456,7 +6477,31 @@ View.Overlaymap = class {
 
     GL.drawArrays(GL.TRIANGLE_STRIP, 0, tile.vertexBuffer.numItems);
     GL.disable(GL.POLYGON_OFFSET_FILL);
-    GL.depthFunc(GL.LESS);
+  }
+
+  enableTileBlending() {
+    const originalBlendFunc = {
+      src: GL.getParameter(GL.BLEND_SRC_RGB),
+      dst: GL.getParameter(GL.BLEND_DST_RGB),
+      src_alpha: GL.getParameter(GL.BLEND_SRC_ALPHA),
+      dst_alpha: GL.getParameter(GL.BLEND_DST_ALPHA),
+    };
+    const originalDepthFunc = GL.getParameter(GL.DEPTH_FUNC);
+
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+    GL.depthFunc(GL.LEQUAL);
+
+    return { originalBlendFunc, originalDepthFunc };
+  }
+
+  restoreTileBlending(originalBlendFunc, originalDepthFunc) {
+    GL.disable(GL.BLEND);
+    GL.blendFunc(
+      originalBlendFunc.src || originalBlendFunc.src_alpha,
+      originalBlendFunc.dst || originalBlendFunc.dst_alpha
+    );
+    GL.depthFunc(originalDepthFunc);
   }
 
   destroy() {

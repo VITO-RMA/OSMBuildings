@@ -1,3 +1,5 @@
+const featureCache = {};
+
 class Feature {
   constructor(type, url, options = {}, callback = function () {}) {
     this.type = type;
@@ -29,6 +31,9 @@ class Feature {
   }
 
   load(url) {
+    if (featureCache[url]) {
+      return setTimeout(this.onLoad, 20, featureCache[url]);
+    }
     // TODO: perhaps have some workers attached to collection and just ask for them
     APP.workers.get((worker) => {
       worker.onMessage((res) => {
@@ -42,7 +47,7 @@ class Feature {
           this.callback();
           return;
         }
-
+        featureCache[url] = res;
         this.onLoad(res);
         worker.free();
       });
@@ -55,27 +60,27 @@ class Feature {
     this.latitude = res.position.latitude;
     this.metersPerLon =
       METERS_PER_DEGREE_LATITUDE * Math.cos((this.latitude / 180) * Math.PI);
-
+    const thisArg = this;
     //****** init buffers *********************************
 
     // this cascade ralaxes rendering a lot when new tile data arrives
     // TODO: destroy properly, even while this cascade might run -> make each step abortable
     this.vertexBuffer = new GLX.Buffer(3, res.vertices);
     this.timer = setTimeout(() => {
-      this.normalBuffer = new GLX.Buffer(3, res.normals);
-      this.timer = setTimeout(() => {
-        this.colorBuffer = new GLX.Buffer(3, res.colors);
-        this.timer = setTimeout(() => {
-          this.texCoordBuffer = new GLX.Buffer(2, res.texCoords);
-          this.timer = setTimeout(() => {
-            this.heightBuffer = new GLX.Buffer(1, res.heights);
-            this.timer = setTimeout(() => {
-              this.pickingBuffer = new GLX.Buffer(3, res.pickingColors);
-              this.timer = setTimeout(() => {
-                this.items = res.items;
-                this.applyTintAndZScale();
-                APP.features.add(this);
-                this.fade = 0;
+      thisArg.normalBuffer = new GLX.Buffer(3, res.normals);
+      thisArg.timer = setTimeout(() => {
+        thisArg.colorBuffer = new GLX.Buffer(3, res.colors);
+        thisArg.timer = setTimeout(() => {
+          thisArg.texCoordBuffer = new GLX.Buffer(2, res.texCoords);
+          thisArg.timer = setTimeout(() => {
+            thisArg.heightBuffer = new GLX.Buffer(1, res.heights);
+            thisArg.timer = setTimeout(() => {
+              thisArg.pickingBuffer = new GLX.Buffer(3, res.pickingColors);
+              thisArg.timer = setTimeout(() => {
+                thisArg.items = res.items;
+                thisArg.applyTintAndZScale();
+                APP.features.add(thisArg);
+                thisArg.fade = 0;
               }, 20);
             }, 20);
           }, 20);

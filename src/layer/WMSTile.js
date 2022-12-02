@@ -9,6 +9,7 @@ class WMSTile {
     this.fixedZoom = options.fixedZoom;
     this.crs = options.crs;
 
+    this.fixedTileGrowth = options.fixedTileGrowth || 0;
     this.options = options.headers
       ? {
           headers: { ...options.headers },
@@ -45,7 +46,8 @@ class WMSTile {
     const s = "abcd"[(x + y) % 4];
     const [plainUrl, unparsedQueryParams] = this.source.split("?");
     const urlQueryParms = new URLSearchParams(unparsedQueryParams);
-    const size = getTileSizeInMeters(APP.position.latitude, z) + 150;
+    const size =
+      getTileSizeInMeters(APP.position.latitude, z) + this.fixedTileGrowth;
     const tileLon = tile2lon(x, z);
     const tileLat = tile2lat(y, z);
     const bboxCoords = [

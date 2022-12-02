@@ -341,7 +341,12 @@ class OSMBuildings {
    */
   addGeoJSONWMSTiles(url, options = {}) {
     options.fixedZoom = options.fixedZoom || 15;
-    this.dataGrid = new WMSTile(url, GeoJSONTile, options, 2);
+    this.dataGrid = new WMSTile(
+      url,
+      GeoJSONTile,
+      { ...options, fixedTileGrowth: 150 },
+      2
+    );
     return this.dataGrid;
   }
 

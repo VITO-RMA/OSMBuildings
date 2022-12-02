@@ -1,3 +1,5 @@
+const bitmapCache = {};
+
 GLX.texture.Image = class {
   constructor() {
     this.abortController = null;
@@ -36,6 +38,13 @@ GLX.texture.Image = class {
 
   load(url, callback, options) {
     //load image with the header!
+    if (bitmapCache[url]) {
+      this.set(bitmapCache[url]);
+      if (callback) {
+        callback(bitmapCache[url]);
+      }
+      return;
+    }
     const thisArg = this;
     if (options && options.headers) {
       if (this.abortController) this.abortController.abort();
@@ -44,6 +53,7 @@ GLX.texture.Image = class {
         (blob) => {
           createImageBitmap(blob, 0, 0, 256, 256)
             .then((image) => {
+              bitmapCache[url] = image;
               thisArg.set(image);
               if (callback) {
                 callback(image);
@@ -162,6 +172,7 @@ GLX.texture.Image = class {
         GL.anisotropyExtension.maxAnisotropyLevel
       );
     }
+    GL.disable(GL.BLEND);
 
     GL.bindTexture(GL.TEXTURE_2D, null);
   }

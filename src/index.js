@@ -739,6 +739,10 @@ class OSMBuildings {
     return new Marker(position, data, options);
   }
 
+  getDomNode() {
+    return this.domNode;
+  }
+
   /**
    * Destroys the map
    */

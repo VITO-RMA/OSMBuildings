@@ -3139,6 +3139,10 @@ class OSMBuildings {
     return new Marker(position, data, options);
   }
 
+  getDomNode() {
+    return this.domNode;
+  }
+
   /**
    * Destroys the map
    */
@@ -3915,9 +3919,9 @@ class WMSTile {
     const tileLat = tile2lat(y, z);
     const bboxCoords = [
       tileLon,
-      tileLat,
+      tileLat - size / METERS_PER_DEGREE_LATITUDE,
       tileLon + size / METERS_PER_DEGREE_LATITUDE,
-      tileLat + size / METERS_PER_DEGREE_LATITUDE,
+      tileLat,
     ];
 
     urlQueryParms.set("bbox", bboxCoords.join(","));

@@ -41,7 +41,7 @@ class Grid {
   }
 
   getURL(x, y, z) {
-    const s = "abcd"[(x + y) % 4];
+    const s = "abc"[(x + y) % 3];
     return pattern(this.source, { s: s, x: x, y: y, z: z });
   }
 

@@ -170,14 +170,16 @@ function processOBJ(obj, mtl, options = {}) {
   };
 
   const items = [],
-    optionColor = Qolor.parse(options.color).toArray(),
+    optionColor =
+      options && options.color
+        ? Qolor.parse(options.color).toArray()
+        : undefined,
     position = options.position;
 
   const meshes = OBJ.parse(obj, mtl, options.flipYZ);
 
   meshes.forEach((mesh, index) => {
     // APP.events.emit('loadfeature', mesh); // TODO
-
     tri.vertices.push(...mesh.vertices);
     tri.normals.push(...mesh.normals);
     tri.texCoords.push(...mesh.texCoords);

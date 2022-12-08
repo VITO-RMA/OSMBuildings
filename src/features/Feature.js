@@ -31,7 +31,7 @@ class Feature {
   }
 
   load(url) {
-    if (featureCache[url]) {
+    if (this.type !== "OBJ" && featureCache[url]) {
       return setTimeout(this.onLoad.bind(this), 20, featureCache[url]);
     }
     // TODO: perhaps have some workers attached to collection and just ask for them

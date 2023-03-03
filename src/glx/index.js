@@ -1,5 +1,5 @@
 class GLX {
-  constructor(canvas, fastMode) {
+  constructor(canvas, fastMode, preserveDrawingBuffer) {
     let GL;
 
     const canvasOptions = {
@@ -7,6 +7,7 @@ class GLX {
       depth: true,
       // premultipliedAlpha: false,
       alpha: true,
+      preserveDrawingBuffer: preserveDrawingBuffer || false,
     };
 
     try {

@@ -43,6 +43,7 @@ class OSMBuildings {
    * @param {Object} [options.bounds] A bounding box to restrict the map to
    * @param {Boolean} [options.state=false] Store the map state in the URL
    * @param {Boolean} [options.disabled=false] Disable user input
+   * @param {Boolean} [options.preserveDrawingBuffer=false] Preserve Canvas drawing buffer, so you can save the output as an image
    * @param {String} [options.attribution] An attribution string
    * @param {Number} [options.zoom=minZoom..maxZoom] Initial zoom, default is middle between global minZoom and maxZoom
    * @param {Number} [options.rotation=0] Initial rotation
@@ -131,7 +132,11 @@ class OSMBuildings {
       this.domNode.offsetHeight * devicePixelRatio;
     this.container.appendChild(this.canvas);
 
-    this.glx = new GLX(this.canvas, options.fastMode);
+    this.glx = new GLX(
+      this.canvas,
+      options.fastMode,
+      options.preserveDrawingBuffer || false
+    );
     GL = this.glx.GL;
 
     this.features = new FeatureCollection();
@@ -264,7 +269,7 @@ class OSMBuildings {
    * Removes a feature, layer or marker from the map.
    */
   remove(item) {
-    if (item.destroy) {
+    if (item && item.destroy) {
       item.destroy();
     }
   }
@@ -382,7 +387,7 @@ class OSMBuildings {
       (current) => current.source === grid.source
     );
     const [removedGrid] = this.gridLayers.splice(index, 1);
-    removedGrid.destroy();
+    if (removedGrid) removedGrid.destroy();
 
     return;
   }
@@ -420,7 +425,7 @@ class OSMBuildings {
       (current) => current.source === grid.source
     );
     const [removedGrid] = this.gridLayers.splice(index, 1);
-    removedGrid.destroy();
+    if (removedGrid) removedGrid.destroy();
 
     return;
   }

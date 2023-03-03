@@ -108,7 +108,8 @@ class Events {
       }
       resizeTimer = setTimeout(() => {
         resizeTimer = null;
-        APP.setSize(APP.container.offsetWidth, APP.container.offsetHeight);
+        if (APP && APP.container)
+          APP.setSize(APP.container.offsetWidth, APP.container.offsetHeight);
       }, 250);
     });
   }

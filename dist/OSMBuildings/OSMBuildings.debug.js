@@ -3882,6 +3882,7 @@ class WMSTile {
 
     this.fixedZoom = options.fixedZoom;
     this.crs = options.crs;
+    this.geomName = options.geomName || "geom";
 
     this.fixedTileGrowth = options.fixedTileGrowth || 0;
     this.options = options.headers
@@ -3930,8 +3931,15 @@ class WMSTile {
       tileLon + size / METERS_PER_DEGREE_LATITUDE,
       tileLat,
     ];
-
-    urlQueryParms.set("bbox", bboxCoords.join(","));
+    if (!urlQueryParms.get("cql_filter"))
+      urlQueryParms.set("bbox", bboxCoords.join(","));
+    else {
+      const cqlFilter = urlQueryParms.get("cql_filter");
+      urlQueryParms.set(
+        "cql_filter",
+        `${cqlFilter} AND BBOX(${this.geomName}, ${bboxCoords.join(",")})`
+      );
+    }
     urlQueryParms.delete("width");
     urlQueryParms.delete("height");
     urlQueryParms.delete("WIDTH");
